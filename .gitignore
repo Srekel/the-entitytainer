@@ -30,3 +30,6 @@
 *.exe
 *.out
 *.app
+tests/.vs/
+tests/Build/
+tests/unittest/x64/
