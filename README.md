@@ -1,4 +1,6 @@
-# The Entitytainer :bowtie:
+# The Entitytainer
+
+:bowtie:
 
 A single header library for managing entity hierarchies.
 
@@ -58,6 +60,8 @@ Seems to work.
 * Only tested on Windows 10 using VS 2017 running x64.
 * Only unit tested - not integration tested.
 * Reallocation is currently commented out due to some refactoring.
+* API is not finalized. Would like to add a bit more customization and allow for passing in arrays of entities instead of one at a time.
+* Improper single-header-style exposure of API.
 
 ## Fun facts
 
@@ -89,9 +93,9 @@ Each bucket list has buckets of different sizes. When a child is added to an ent
 
 ### Memory reuse
 
-When you remove an entity, its bucket will of course be available to be used by other entities in the future. The way this works is that each bucket list has an index to the *first free bucket*. When you free a bucket, the bucket space is *repurposed* and the *previous value* of the first free bucket is stored there. Then the first free bucket is re-pointed to your newly freed bucket. I call this an *intrinsic linked bucketed slot allocator*. Do I really? No. Maybe. Is there a name for this?
+When you remove an entity, its bucket will of course be available to be used by other entities in the future. The way this works is that each bucket list has an index to the *first free bucket*. When you free a bucket, the bucket space is *repurposed* and the *previous value* of the first free bucket is stored there. Then the first free bucket is re-pointed to your newly freed bucket. I call this an *intrinsically linked bucketed slot allocator*. Do I really? No. Maybe. Is there a name for this?
 
-It's kinda neat because it's super fast to "allocate" or deallocate a bucket, and yet it needs practically no memory for bookkeeping.
+It's kinda neat because it's fast to "allocate" or deallocate a bucket, and yet it needs practically no memory for bookkeeping.
 
 ## License
 

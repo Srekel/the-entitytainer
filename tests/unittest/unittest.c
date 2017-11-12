@@ -11,11 +11,6 @@ typedef struct UnitTestData {
     char     errors[256][256];
     unsigned error_index;
     unsigned num_tests;
-
-    bool simplebool_target;
-    bool generatedbool_target;
-
-    char stringtest[256];
 } UnitTestData;
 
 static UnitTestData g_testdata;
@@ -36,9 +31,12 @@ unittest_entitytainer_assert( bool test ) {
 #define ASSERT unittest_entitytainer_assert
 #define ENTITYTAINER_IMPLEMENTATION
 
+#pragma warning(disable:4464)  // Include with ".."
 #include "../../the_entitytainer.h"
 
-void*
+#pragma warning(disable:4710)  // printf not inlined - I don't care. :)
+
+static void*
 allocate( int size ) {
     return malloc( size );
 }
@@ -84,9 +82,8 @@ do_single_parent_tests( TheEntitytainer* entitytainer ) {
     ASSERT( children[0] == 6 );
     ASSERT( num_children == 1 );
 
-    for ( int i_child = 0; i_child < 4; ++i_child ) {
-        TheEntitytainerEntity child = ( TheEntitytainerEntity )( i_child + 10 );
-        entitytainer_add_child( entitytainer, 3, child );
+    for ( TheEntitytainerEntity i_child = 0; i_child < 4; ++i_child ) {
+        entitytainer_add_child( entitytainer, 3, i_child + 10 );
     }
 
     entitytainer_get_children( entitytainer, 3, &children, &num_children );
@@ -149,7 +146,7 @@ do_multi_parent_tests( TheEntitytainer* entitytainer ) {
 }
 
 static void
-unittest_run() {
+unittest_run( void ) {
 
     memset( &g_testdata, 0, sizeof( g_testdata ) );
     UnitTestData* testdata = &g_testdata;
@@ -187,7 +184,8 @@ LABEL_done:;
 
 int
 main( int argc, char** argv ) {
-    (void)( argc, argv );
+    (void)( argc );
+    (void)( argv );
 
     unittest_run();
 

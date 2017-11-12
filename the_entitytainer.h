@@ -30,6 +30,22 @@ In *ONE* source file, put:
 
 Other source files should just include the_entitytainer.h
 
+I recommend looking at the unittest.c file for an example of how to use it, but basically:
+
+
+```C
+int              bucket_sizes[]      = { 4, 16, 256 };
+int              bucket_list_sizes[] = { 4, 2, 2 };
+TheEntitytainer* entitytainer        = entitytainer_create( allocate, 65535, bucket_sizes, bucket_list_sizes, 3 );
+
+entitytainer_add_entity( entitytainer, 3 );
+entitytainer_add_child( entitytainer, 3, 4 );
+
+int                    num_children;
+TheEntitytainerEntity* children;
+entitytainer_get_children( entitytainer, 3, &children, &num_children );
+```
+
 ## Notes
 
 See the accompanying unit test projects for references on how to use it.
@@ -82,11 +98,10 @@ typedef short TheEntitytainerEntity;
 
 #ifndef ENTITYTAINER_Entry
 typedef short TheEntitytainerEntry;
+#define ENTITYTAINER_BucketMask 0x3f
 #endif
 
-#define ENTITYTAINER_BucketMask 0x3f
 #define ENTITYTAINER_BucketListOffset ( sizeof( TheEntitytainerEntry ) * 8 - 2 )
-// #define TheEntitytainerBuckMask 0xFFFF & ~0x3;
 
 typedef void* ( *TheEntitytainerAllocatorFunction )( int size );
 
@@ -103,10 +118,10 @@ typedef struct {
 typedef struct {
     TheEntitytainerAllocatorFunction allocator_func;
     TheEntitytainerBucketList*       bucket_lists;
-    int                              num_bucket_lists;
     TheEntitytainerEntry*            entry_lookup;
     TheEntitytainerEntity*           entry_reverse_lookup;
     int                              entry_lookup_size;
+    int                              num_bucket_lists;
 } TheEntitytainer;
 
 void
