@@ -69,6 +69,32 @@ Seems to work.
 * Most of The Entitytainer was written on the bus.
 * The name is a pun of entities and containers. If it wasn't obvious. Credit for this amazing name goes to @fzetterman from this thread: https://twitter.com/Srekel/status/919845253032660993
 
+## How to use
+
+```C
+static void*
+allocate( int size ) {
+    return malloc( size );
+}
+
+{
+    int              bucket_sizes[]      = { 4, 16, 256 };
+    int              bucket_list_sizes[] = { 16, 4, 2 };
+    int              num_bucket_lists    = 3;
+    TheEntitytainer* entitytainer        = entitytainer_create( allocate, 65535, bucket_sizes, bucket_list_sizes, num_bucket_lists );
+
+    entitytainer_add_entity( entitytainer, 3 );
+    entitytainer_add_child( entitytainer, 3, 4 );
+    entitytainer_add_child( entitytainer, 3, 56 );
+
+    int                    num_children;
+    TheEntitytainerEntity* children;
+    entitytainer_get_children( entitytainer, 3, &children, &num_children );
+
+    // Do stuff with the children here
+}
+```
+
 ## How it works
 
 This image describes it at a high level.
