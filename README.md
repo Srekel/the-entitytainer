@@ -1,4 +1,4 @@
-# The Entitytainer
+# The Entitytainer :bowtie:
 
 A single header library for managing entity hierarchies.
 
@@ -6,8 +6,6 @@ Basically a multimap implementation in C, aimed at game development.
 
 Its main purpose is to keep track of hierarchies of entities. This can be useful for attachments (e.g. holding a weapon in
 the hand) and inventory (having a piece of cheese in a bag in the backpack on the back of a character) for example.
-
-The name is a pun of entities and containers. If it wasn't obvious. Credit for this amazing name goes to @fzetterman from this thread: https://twitter.com/Srekel/status/919845253032660993
 
 ## Problem statement
 
@@ -28,36 +26,54 @@ struct InventorySystem {
 };
 ```
 
-You realize that this is bad. And not just for using STL. But how to do it properly?
+You realize that this is bad. And not just because you're using STL. But how to do it properly?
 
 This is what The Entitytainer solves.
 
 ## Features
 
-* It only does one allocation.
-* Can be dynamically reallocated - controlled by application.
+* It only needs one allocation.
+  * It's up to the application to decide on an appropriate size beforehand. This means it's using more memory than necessary until you start to fill it up. On the other hand, generally you have a worst case that you need to handle anyway. ¯\\\_(ツ)_/¯
+* Can be dynamically reallocated (i.e. grown) - controlled by application.
+  * And it's pretty quick too, just a couple of memcpy's.
 * A hierarchical bucket system is used to not waste memory.
 * O(1) lookup, add, removal.
+  * That said, you have to pay the price of a few indirections and a bit of math. Only you and your platform can say whether that's better or worse than a lot of small allocations.
 * Reverse lookup to get parent from a child.
 * C99 compatible (or aims to be).
+* Platform agnostic (or aims to be).
 * Zero dependencies.
-
+* Built with maximum/pedantic warnings, and warnings as error.
+* Code formatted with clang-format.
+* There are unit tests!
+  * They all pass.
+  * They should cover most things but there could be cases I haven't tried yet.
 
 ## Current status
 
-Builds but unit test doesn't even start.
+Seems to work.
 
 ## Known issues
 
-* Only tested on Windows 10 using VS 2017.
+* Only tested on Windows 10 using VS 2017 running x64.
+* Only unit tested - not integration tested.
+* Reallocation is currently commented out due to some refactoring.
+
+## Fun facts
+
+* I wrote almost the whole thing without compiling it once. It's kinda relaxing to work that way, not thinking too hard about syntax errors etc, just writing the code. Of course, writing it was the easy part. Making it actually work was the other 90%.
+* Most of The Entitytainer was written on the bus.
+* The name is a pun of entities and containers. If it wasn't obvious. Credit for this amazing name goes to @fzetterman from this thread: https://twitter.com/Srekel/status/919845253032660993
 
 ## How it works
 
 This image describes it at a high level.
 
-![A graph that's... colorful and complicated.](docs/visual_explanation.png "Logo Title Text 1")
+![A graph that's... colorful and complicated.](docs/visual_explanation.png)
 
-First you decide how many *entries* you want. This is be your maximum entity count. Note, it's NOT the maximum amount of entities you will maximally put into the entitytainer. At some point I might fix hashing but for now it's just a direct lookup based on the entity ID.
+Not that you need me to explain in text what is so clearly described in the image, but...
+
+First you decide how many *entries* you want. This is your maximum entity count. Note, it's NOT the maximum amount of entities you will maximally put into the entitytainer. At some point I might fix hashing but for now it's just a direct lookup based on the entity ID.
 
 This number is used to create an array of *entries*. An entry is a 16 bit value that contains of two parts: The bucket list lookup and the bucket index.
 
@@ -71,12 +87,11 @@ After the *counter* comes the children.
 
 Each bucket list has buckets of different sizes. When a child is added to an entity and the bucket is full, the bucket is copied to a new bucket in the next bucket list. Note that you probably don't want your first bucket list to have bucket size 2, like in the image, unless it's *very* common to have just one child. Also, this means that if you add more children than the last bucket list can have (256 in the image), The Entitytainer will fail an ASSERT.
 
-### Removal
+### Memory reuse
 
 When you remove an entity, its bucket will of course be available to be used by other entities in the future. The way this works is that each bucket list has an index to the *first free bucket*. When you free a bucket, the bucket space is *repurposed* and the *previous value* of the first free bucket is stored there. Then the first free bucket is re-pointed to your newly freed bucket. I call this an *intrinsic linked bucketed slot allocator*. Do I really? No. Maybe. Is there a name for this?
 
 It's kinda neat because it's super fast to "allocate" or deallocate a bucket, and yet it needs practically no memory for bookkeeping.
-
 
 ## License
 
