@@ -7,7 +7,7 @@ A single header library for managing entity hierarchies.
 Basically a multimap implementation in C, aimed at game development.
 
 Its main purpose is to keep track of hierarchies of entities. This can be useful for attachments (e.g. holding a weapon in
-the hand) and inventory (having a piece of cheese in a bag in the backpack on the back of a character) for example.
+the hand) and inventory (having a piece of cheese in a bag in the backpack on the back of a character) or a workplace hierarchy, keeping track of who's the boss of who, for example.
 
 ## Problem statement
 
@@ -122,6 +122,10 @@ Each bucket list has buckets of different sizes. When a child is added to an ent
 When you remove an entity, its bucket will of course be available to be used by other entities in the future. The way this works is that each bucket list has an index to the *first free bucket*. When you free a bucket, the bucket space is *repurposed* and the *previous value* of the first free bucket is stored there. Then the first free bucket is re-pointed to your newly freed bucket. I call this an *intrinsically linked bucketed slot allocator*. Do I really? No. Maybe. Is there a name for this?
 
 It's kinda neat because it's fast to "allocate" or deallocate a bucket, and yet it needs practically no memory for bookkeeping.
+
+## But it's not really a multimap is it?
+
+No, not really. Cause it'll complain (or ought to) if you assign the same child to two different parents. (Just to be clear - you can have deeper-than-one hierarchies though.)
 
 ## License
 
