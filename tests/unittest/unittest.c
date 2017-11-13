@@ -31,10 +31,10 @@ unittest_entitytainer_assert( bool test ) {
 #define ASSERT unittest_entitytainer_assert
 #define ENTITYTAINER_IMPLEMENTATION
 
-#pragma warning(disable:4464)  // Include with ".."
+#pragma warning( disable : 4464 ) // Include with ".."
 #include "../../the_entitytainer.h"
 
-#pragma warning(disable:4710)  // printf not inlined - I don't care. :)
+#pragma warning( disable : 4710 ) // printf not inlined - I don't care. :)
 
 static void*
 allocate( int size ) {
@@ -151,9 +151,13 @@ unittest_run( void ) {
     memset( &g_testdata, 0, sizeof( g_testdata ) );
     UnitTestData* testdata = &g_testdata;
 
-    int              bucket_sizes[]      = { 4, 16, 256 };
-    int              bucket_list_sizes[] = { 4, 2, 2 };
-    TheEntitytainer* entitytainer        = entitytainer_create( allocate, 65535, bucket_sizes, bucket_list_sizes, 3 );
+    int   max_num_entries     = 1024;
+    int   bucket_sizes[]      = { 4, 16, 256 };
+    int   bucket_list_sizes[] = { 4, 2, 2 };
+    int   needed_memory_size  = entitytainer_needed_size( max_num_entries, bucket_sizes, bucket_list_sizes, 3 );
+    void* memory              = malloc( needed_memory_size );
+    TheEntitytainer* entitytainer =
+      entitytainer_create( memory, needed_memory_size, max_num_entries, bucket_sizes, bucket_list_sizes, 3 );
 
     printf( "\n" );
     printf( "Setup errors found: %u/%u\n", testdata->error_index, testdata->num_tests );

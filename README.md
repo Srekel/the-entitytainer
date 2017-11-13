@@ -72,27 +72,23 @@ Seems to work.
 ## How to use
 
 ```C
-static void*
-allocate( int size ) {
-    return malloc( size );
-}
+int   max_num_entries     = 1024;
+int   bucket_sizes[]      = { 4, 16, 256 };
+int   bucket_list_sizes[] = { 4, 2, 2 };
+int   needed_memory_size  = entitytainer_needed_size( max_num_entries, bucket_sizes, bucket_list_sizes, 3 );
+void* memory              = malloc( needed_memory_size );
+TheEntitytainer* entitytainer =
+  entitytainer_create( memory, needed_memory_size, max_num_entries, bucket_sizes, bucket_list_sizes, 3 );
 
-{
-    int              bucket_sizes[]      = { 4, 16, 256 };
-    int              bucket_list_sizes[] = { 16, 4, 2 };
-    int              num_bucket_lists    = 3;
-    TheEntitytainer* entitytainer        = entitytainer_create( allocate, 65535, bucket_sizes, bucket_list_sizes, num_bucket_lists );
+entitytainer_add_entity( entitytainer, 3 );
+entitytainer_add_child( entitytainer, 3, 10 );
 
-    entitytainer_add_entity( entitytainer, 3 );
-    entitytainer_add_child( entitytainer, 3, 4 );
-    entitytainer_add_child( entitytainer, 3, 56 );
+int                    num_children;
+TheEntitytainerEntity* children;
+entitytainer_get_children( entitytainer, 3, &children, &num_children );
+ASSERT( num_children == 1 );
+ASSERT( children[0] == 10 );
 
-    int                    num_children;
-    TheEntitytainerEntity* children;
-    entitytainer_get_children( entitytainer, 3, &children, &num_children );
-
-    // Do stuff with the children here
-}
 ```
 
 ## How it works

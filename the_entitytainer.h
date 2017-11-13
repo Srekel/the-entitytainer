@@ -34,16 +34,22 @@ I recommend looking at the unittest.c file for an example of how to use it, but 
 
 
 ```C
-int              bucket_sizes[]      = { 4, 16, 256 };
-int              bucket_list_sizes[] = { 4, 2, 2 };
-TheEntitytainer* entitytainer        = entitytainer_create( allocate, 65535, bucket_sizes, bucket_list_sizes, 3 );
+    int   max_num_entries     = 1024;
+    int   bucket_sizes[]      = { 4, 16, 256 };
+    int   bucket_list_sizes[] = { 4, 2, 2 };
+    int   needed_memory_size  = entitytainer_needed_size( max_num_entries, bucket_sizes, bucket_list_sizes, 3 );
+    void* memory              = malloc( needed_memory_size );
+    TheEntitytainer* entitytainer =
+      entitytainer_create( memory, needed_memory_size, max_num_entries, bucket_sizes, bucket_list_sizes, 3 );
 
-entitytainer_add_entity( entitytainer, 3 );
-entitytainer_add_child( entitytainer, 3, 4 );
+    entitytainer_add_entity( entitytainer, 3 );
+    entitytainer_add_child( entitytainer, 3, 10 );
 
-int                    num_children;
-TheEntitytainerEntity* children;
-entitytainer_get_children( entitytainer, 3, &children, &num_children );
+    int                    num_children;
+    TheEntitytainerEntity* children;
+    entitytainer_get_children( entitytainer, 3, &children, &num_children );
+    ASSERT( num_children == 1 );
+    ASSERT( children[0] == 10 );
 ```
 
 ## Notes
@@ -102,9 +108,6 @@ typedef short TheEntitytainerEntry;
 #endif
 
 #define ENTITYTAINER_BucketListOffset ( sizeof( TheEntitytainerEntry ) * 8 - 2 )
-
-typedef void* ( *TheEntitytainerAllocatorFunction )( int size );
-
 #define ENTITYTAINER_NoFreeBucket -1
 
 typedef struct {
@@ -116,24 +119,18 @@ typedef struct {
 } TheEntitytainerBucketList;
 
 typedef struct {
-    TheEntitytainerAllocatorFunction allocator_func;
-    TheEntitytainerBucketList*       bucket_lists;
     TheEntitytainerEntry*            entry_lookup;
     TheEntitytainerEntity*           entry_reverse_lookup;
-    int                              entry_lookup_size;
+    TheEntitytainerBucketList*       bucket_lists;
     int                              num_bucket_lists;
+    int                              entry_lookup_size;
 } TheEntitytainer;
 
 void
 entitytainer_remove_child( TheEntitytainer* entitytainer, TheEntitytainerEntity parent, TheEntitytainerEntity child );
 
-TheEntitytainer*
-entitytainer_create( TheEntitytainerAllocatorFunction allocator_func,
-                     int                              num_entries,
-                     int*                             bucket_sizes,
-                     int*                             bucket_list_sizes,
-                     int                              num_bucket_lists ) {
-
+int
+entitytainer_needed_size( int num_entries, int* bucket_sizes, int* bucket_list_sizes, int num_bucket_lists ) {
     int size_needed = sizeof( TheEntitytainer );
     size_needed += num_entries * sizeof( TheEntitytainerEntry );
     size_needed += num_entries * sizeof( TheEntitytainerEntry );
@@ -143,12 +140,22 @@ entitytainer_create( TheEntitytainerAllocatorFunction allocator_func,
         size_needed += bucket_list_sizes[i] * bucket_sizes[i] * sizeof( TheEntitytainerEntry );
     }
 
-    char* buffer_start = allocator_func( size_needed );
+	return size_needed;
+}
+
+TheEntitytainer*
+entitytainer_create( void* memory,
+                     int   memory_size,
+                     int   num_entries,
+                     int*  bucket_sizes,
+                     int*  bucket_list_sizes,
+                     int   num_bucket_lists ) {
+
+    char* buffer_start = (char*)memory;
     char* buffer       = buffer_start;
-    ENTITYTAINER_memset( buffer, 0, size_needed );
+    ENTITYTAINER_memset( buffer, 0, memory_size );
 
     TheEntitytainer* entitytainer = (TheEntitytainer*)buffer;
-    entitytainer->allocator_func  = allocator_func;
     buffer += sizeof( TheEntitytainer );
     entitytainer->entry_lookup = (TheEntitytainerEntry*)buffer;
     buffer += sizeof( TheEntitytainerEntry ) * num_entries;
@@ -183,13 +190,14 @@ entitytainer_create( TheEntitytainerAllocatorFunction allocator_func,
     }
 
     ENTITYTAINER_assert( *bucket_data_start == 0 );
-    ENTITYTAINER_assert( (char*)bucket_data == buffer_start + size_needed );
+    ENTITYTAINER_assert( (char*)bucket_data == buffer_start + memory_size );
     return entitytainer;
 }
 
 TheEntitytainer*
-entitytainer_realloc( TheEntitytainer* entitytainer_old, float growth ) {
+entitytainer_realloc( TheEntitytainer* entitytainer_old, void* memory, int memory_size, float growth ) {
     ENTITYTAINER_assert( false ); // Not yet implemented
+    (void)memory_size;
 
     int num_entries = entitytainer_old->entry_lookup_size; // * growth;
     int size_needed = sizeof( TheEntitytainer );
@@ -203,7 +211,7 @@ entitytainer_realloc( TheEntitytainer* entitytainer_old, float growth ) {
         size_needed += (int)( old_bucket_size * growth );
     }
 
-    char* buffer = entitytainer_old->allocator_func( size_needed );
+    char* buffer = (char*)memory;
 
     TheEntitytainer* entitytainer   = (TheEntitytainer*)buffer;
     *entitytainer                   = *entitytainer_old;
