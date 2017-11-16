@@ -110,6 +110,12 @@ typedef short TheEntitytainerEntry;
 #define ENTITYTAINER_BucketListOffset ( sizeof( TheEntitytainerEntry ) * 8 - 2 )
 #define ENTITYTAINER_NoFreeBucket -1
 
+#if defined( ENTITYTAINER_STATIC )
+#define ENTITYTAINER_API static
+#else
+#define ENTITYTAINER_API extern
+#endif
+
 typedef struct {
     TheEntitytainerEntity* buckets;
     int                    bucket_size;
@@ -119,37 +125,38 @@ typedef struct {
 } TheEntitytainerBucketList;
 
 typedef struct {
-    TheEntitytainerEntry*            entry_lookup;
-    TheEntitytainerEntity*           entry_reverse_lookup;
-    TheEntitytainerBucketList*       bucket_lists;
-    int                              num_bucket_lists;
-    int                              entry_lookup_size;
+    TheEntitytainerEntry*      entry_lookup;
+    TheEntitytainerEntity*     entry_reverse_lookup;
+    TheEntitytainerBucketList* bucket_lists;
+    int                        num_bucket_lists;
+    int                        entry_lookup_size;
 } TheEntitytainer;
 
-void
+ENTITYTAINER_API void
 entitytainer_remove_child( TheEntitytainer* entitytainer, TheEntitytainerEntity parent, TheEntitytainerEntity child );
 
-int
+ENTITYTAINER_API int
 entitytainer_needed_size( int num_entries, int* bucket_sizes, int* bucket_list_sizes, int num_bucket_lists ) {
     int size_needed = sizeof( TheEntitytainer );
-    size_needed += num_entries * sizeof( TheEntitytainerEntry );
-    size_needed += num_entries * sizeof( TheEntitytainerEntry );
-    size_needed += num_bucket_lists * sizeof( TheEntitytainerBucketList );
+    size_needed += num_entries * sizeof( TheEntitytainerEntry );           // Lookup
+    size_needed += num_entries * sizeof( TheEntitytainerEntity );          // Reverse lookup
+    size_needed += num_bucket_lists * sizeof( TheEntitytainerBucketList ); // List structs
 
+    // Buckte lists
     for ( int i = 0; i < num_bucket_lists; ++i ) {
-        size_needed += bucket_list_sizes[i] * bucket_sizes[i] * sizeof( TheEntitytainerEntry );
+        size_needed += bucket_list_sizes[i] * bucket_sizes[i] * sizeof( TheEntitytainerEntity );
     }
 
-	return size_needed;
+    return size_needed;
 }
 
-TheEntitytainer*
-entitytainer_create( void* memory,
-                     int   memory_size,
-                     int   num_entries,
-                     int*  bucket_sizes,
-                     int*  bucket_list_sizes,
-                     int   num_bucket_lists ) {
+ENTITYTAINER_API TheEntitytainer*
+                 entitytainer_create( void* memory,
+                                      int   memory_size,
+                                      int   num_entries,
+                                      int*  bucket_sizes,
+                                      int*  bucket_list_sizes,
+                                      int   num_bucket_lists ) {
 
     char* buffer_start = (char*)memory;
     char* buffer       = buffer_start;
@@ -194,20 +201,20 @@ entitytainer_create( void* memory,
     return entitytainer;
 }
 
-TheEntitytainer*
-entitytainer_realloc( TheEntitytainer* entitytainer_old, void* memory, int memory_size, float growth ) {
+ENTITYTAINER_API TheEntitytainer*
+                 entitytainer_realloc( TheEntitytainer* entitytainer_old, void* memory, int memory_size, float growth ) {
     ENTITYTAINER_assert( false ); // Not yet implemented
     (void)memory_size;
 
     int num_entries = entitytainer_old->entry_lookup_size; // * growth;
     int size_needed = sizeof( TheEntitytainer );
     size_needed += (int)( num_entries * sizeof( TheEntitytainerEntry ) );
-    size_needed += (int)( num_entries * sizeof( TheEntitytainerEntry ) );
+    size_needed += (int)( num_entries * sizeof( TheEntitytainerEntity ) );
     size_needed += entitytainer_old->num_bucket_lists * sizeof( TheEntitytainerBucketList );
 
     for ( int i = 0; i < entitytainer_old->num_bucket_lists; ++i ) {
         TheEntitytainerBucketList* bucket_list = &entitytainer_old->bucket_lists[i];
-        int old_bucket_size = bucket_list->total_buckets * bucket_list->bucket_size * sizeof( TheEntitytainerEntry );
+        int old_bucket_size = bucket_list->total_buckets * bucket_list->bucket_size * sizeof( TheEntitytainerEntity );
         size_needed += (int)( old_bucket_size * growth );
     }
 
@@ -242,7 +249,7 @@ entitytainer_realloc( TheEntitytainer* entitytainer_old, void* memory, int memor
     return entitytainer;
 }
 
-bool
+ENTITYTAINER_API bool
 entitytainer_needs_realloc( TheEntitytainer* entitytainer, float percent_free, int num_free_buckets ) {
     for ( int i = 0; i < entitytainer->num_bucket_lists; ++i ) {
         // ENTITYTAINER_assert( bucket_data - buffer > bucket_sizes[i] * bucket_list_sizes[i] ); // >= ?
@@ -259,7 +266,7 @@ entitytainer_needs_realloc( TheEntitytainer* entitytainer, float percent_free, i
     return false;
 }
 
-void
+ENTITYTAINER_API void
 entitytainer_add_entity( TheEntitytainer* entitytainer, TheEntitytainerEntity entity ) {
     ENTITYTAINER_assert( entitytainer->entry_lookup[entity] == 0 );
 
@@ -281,7 +288,7 @@ entitytainer_add_entity( TheEntitytainer* entitytainer, TheEntitytainerEntity en
     bucket_list->buckets[bucket_index * bucket_list->bucket_size] = 0;
 }
 
-void
+ENTITYTAINER_API void
 entitytainer_remove_entity( TheEntitytainer* entitytainer, TheEntitytainerEntity entity ) {
     TheEntitytainerEntry lookup = entitytainer->entry_lookup[entity];
 
@@ -295,7 +302,7 @@ entitytainer_remove_entity( TheEntitytainer* entitytainer, TheEntitytainerEntity
         return;
     }
 
-    int                        bucket_list_index = lookup >> ( sizeof( TheEntitytainerEntry ) * 8 - 2 );
+    int                        bucket_list_index = lookup >> ENTITYTAINER_BucketListOffset;
     TheEntitytainerBucketList* bucket_list       = entitytainer->bucket_lists + bucket_list_index;
     int                        bucket_index      = lookup & ENTITYTAINER_BucketMask;
     int                        bucket_offset     = bucket_index * bucket_list->bucket_size;
@@ -307,15 +314,15 @@ entitytainer_remove_entity( TheEntitytainer* entitytainer, TheEntitytainerEntity
     --bucket_list->used_buckets;
 }
 
-void
+ENTITYTAINER_API void
 entitytainer_add_child( TheEntitytainer* entitytainer, TheEntitytainerEntity parent, TheEntitytainerEntity child ) {
     TheEntitytainerEntry lookup = entitytainer->entry_lookup[parent];
     ENTITYTAINER_assert( lookup != 0 );
-    int                        bucket_list_index = lookup >> ( sizeof( TheEntitytainerEntry ) * 8 - 2 );
+    int                        bucket_list_index = lookup >> ENTITYTAINER_BucketListOffset;
     TheEntitytainerBucketList* bucket_list       = entitytainer->bucket_lists + bucket_list_index;
-    int                        bucket_index      = lookup & 0x3f;
+    int                        bucket_index      = lookup & ENTITYTAINER_BucketMask;
     int                        bucket_offset     = bucket_index * bucket_list->bucket_size;
-    TheEntitytainerEntry*      bucket            = bucket_list->buckets + bucket_offset;
+    TheEntitytainerEntity*     bucket            = bucket_list->buckets + bucket_offset;
     if ( bucket[0] + 1 == bucket_list->bucket_size ) {
         ASSERT( bucket_list_index != 3 );
         TheEntitytainerBucketList* bucket_list_new  = bucket_list + 1;
@@ -326,8 +333,8 @@ entitytainer_add_child( TheEntitytainer* entitytainer, TheEntitytainerEntity par
             bucket_list_new->first_free_bucket = bucket_list_new->buckets[bucket_list_new->first_free_bucket];
         }
 
-        int                   bucket_offset_new = bucket_index_new * bucket_list_new->bucket_size;
-        TheEntitytainerEntry* bucket_new        = bucket_list_new->buckets + bucket_offset_new;
+        int                    bucket_offset_new = bucket_index_new * bucket_list_new->bucket_size;
+        TheEntitytainerEntity* bucket_new        = bucket_list_new->buckets + bucket_offset_new;
         ENTITYTAINER_memcpy( bucket_new, bucket, bucket_list->bucket_size * sizeof( TheEntitytainerEntity ) );
 
         bucket_list_new->used_buckets++;
@@ -349,13 +356,13 @@ entitytainer_add_child( TheEntitytainer* entitytainer, TheEntitytainerEntity par
     entitytainer->entry_reverse_lookup[child] = parent;
 }
 
-void
+ENTITYTAINER_API void
 entitytainer_remove_child( TheEntitytainer* entitytainer, TheEntitytainerEntity parent, TheEntitytainerEntity child ) {
     TheEntitytainerEntry lookup = entitytainer->entry_lookup[parent];
     ENTITYTAINER_assert( lookup != 0 );
-    int                        bucket_list_index = lookup >> ( sizeof( TheEntitytainerEntry ) * 8 - 2 );
+    int                        bucket_list_index = lookup >> ENTITYTAINER_BucketListOffset;
     TheEntitytainerBucketList* bucket_list       = entitytainer->bucket_lists + bucket_list_index;
-    int                        bucket_index      = lookup & 0x3f;
+    int                        bucket_index      = lookup & ENTITYTAINER_BucketMask;
     int                        bucket_offset     = bucket_index * bucket_list->bucket_size;
     TheEntitytainerEntity*     bucket            = (TheEntitytainerEntity*)( bucket_list->buckets + bucket_offset );
 
@@ -386,8 +393,8 @@ entitytainer_remove_child( TheEntitytainer* entitytainer, TheEntitytainerEntity 
             bucket_list_new->first_free_bucket = bucket_list_new->buckets[bucket_list_new->first_free_bucket];
         }
 
-        int                   bucket_offset_new = bucket_index_new * bucket_list_new->bucket_size;
-        TheEntitytainerEntry* bucket_new        = bucket_list_new->buckets + bucket_offset_new;
+        int                    bucket_offset_new = bucket_index_new * bucket_list_new->bucket_size;
+        TheEntitytainerEntity* bucket_new        = bucket_list_new->buckets + bucket_offset_new;
         ENTITYTAINER_memcpy( bucket_new, bucket, bucket_list_new->bucket_size * sizeof( TheEntitytainerEntity ) );
 
         bucket_list_new->used_buckets++;
@@ -403,9 +410,7 @@ entitytainer_remove_child( TheEntitytainer* entitytainer, TheEntitytainerEntity 
     entitytainer->entry_reverse_lookup[child] = 0;
 }
 
-void entitytainer_remove_child_by_index( TheEntitytainer* entitytainer, TheEntitytainerEntry entry, int index );
-
-void
+ENTITYTAINER_API void
 entitytainer_get_children( TheEntitytainer*        entitytainer,
                            TheEntitytainerEntity   parent,
                            TheEntitytainerEntity** children,
@@ -413,36 +418,36 @@ entitytainer_get_children( TheEntitytainer*        entitytainer,
 
     TheEntitytainerEntry lookup = entitytainer->entry_lookup[parent];
     ENTITYTAINER_assert( lookup != 0 );
-    int                        bucket_list_index = lookup >> ( sizeof( TheEntitytainerEntry ) * 8 - 2 );
+    int                        bucket_list_index = lookup >> ENTITYTAINER_BucketListOffset;
     TheEntitytainerBucketList* bucket_list       = entitytainer->bucket_lists + bucket_list_index;
-    int                        bucket_index      = lookup & 0x3f;
+    int                        bucket_index      = lookup & ENTITYTAINER_BucketMask;
     int                        bucket_offset     = bucket_index * bucket_list->bucket_size;
     TheEntitytainerEntity*     bucket            = (TheEntitytainerEntity*)( bucket_list->buckets + bucket_offset );
     *num_children                                = (int)bucket[0];
     *children                                    = bucket + 1;
 }
 
-int
+ENTITYTAINER_API int
 entitytainer_num_children( TheEntitytainer* entitytainer, TheEntitytainerEntity parent ) {
     TheEntitytainerEntry lookup = entitytainer->entry_lookup[parent];
     ENTITYTAINER_assert( lookup != 0 );
-    int                        bucket_list_index = lookup >> ( sizeof( TheEntitytainerEntry ) * 8 - 2 );
+    int                        bucket_list_index = lookup >> ENTITYTAINER_BucketListOffset;
     TheEntitytainerBucketList* bucket_list       = entitytainer->bucket_lists + bucket_list_index;
-    int                        bucket_index      = lookup & 0x3f;
+    int                        bucket_index      = lookup & ENTITYTAINER_BucketMask;
     int                        bucket_offset     = bucket_index * bucket_list->bucket_size;
     TheEntitytainerEntity*     bucket            = (TheEntitytainerEntity*)( bucket_list->buckets + bucket_offset );
     return (int)bucket[0];
 }
 
-int
+ENTITYTAINER_API int
 entitytainer_get_child_index( TheEntitytainer*      entitytainer,
                               TheEntitytainerEntity parent,
                               TheEntitytainerEntity child ) {
     TheEntitytainerEntry lookup = entitytainer->entry_lookup[parent];
     ENTITYTAINER_assert( lookup != 0 );
-    int                        bucket_list_index = lookup >> ( sizeof( TheEntitytainerEntry ) * 8 - 2 );
+    int                        bucket_list_index = lookup >> ENTITYTAINER_BucketListOffset;
     TheEntitytainerBucketList* bucket_list       = entitytainer->bucket_lists + bucket_list_index;
-    int                        bucket_index      = lookup & 0x3f;
+    int                        bucket_index      = lookup & ENTITYTAINER_BucketMask;
     int                        bucket_offset     = bucket_index * bucket_list->bucket_size;
     TheEntitytainerEntity*     bucket            = (TheEntitytainerEntity*)( bucket_list->buckets + bucket_offset );
     int                        num_children      = (int)bucket[0];
@@ -455,8 +460,8 @@ entitytainer_get_child_index( TheEntitytainer*      entitytainer,
     return -1;
 }
 
-TheEntitytainerEntry
-entitytainer_get_parent( TheEntitytainer* entitytainer, TheEntitytainerEntity child ) {
+ENTITYTAINER_API TheEntitytainerEntity
+                 entitytainer_get_parent( TheEntitytainer* entitytainer, TheEntitytainerEntity child ) {
     TheEntitytainerEntity parent = entitytainer->entry_reverse_lookup[child];
     return parent;
 }

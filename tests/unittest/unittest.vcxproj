@@ -150,6 +150,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="unittest.c" />
+    <ClCompile Include="unittest_base.c" />
+    <ClCompile Include="unittest_default.c" />
+    <ClCompile Include="unittest_entity_32.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

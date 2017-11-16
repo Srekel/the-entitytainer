@@ -2,5 +2,8 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="unittest.c" />
+    <ClCompile Include="unittest_default.c" />
+    <ClCompile Include="unittest_entity_32.c" />
+    <ClCompile Include="unittest_base.c" />
   </ItemGroup>
 </Project>
