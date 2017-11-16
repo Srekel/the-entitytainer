@@ -120,6 +120,30 @@ do_multi_parent_tests( TheEntitytainer* entitytainer ) {
     entitytainer_remove_entity( entitytainer, 10 );
     entitytainer_add_entity( entitytainer, 10 );
     ASSERT( entitytainer_num_children( entitytainer, 10 ) == 0 );
+
+    entitytainer_add_entity( entitytainer, 40 );
+    for ( TheEntitytainerEntity i_child = 0; i_child < 15; ++i_child ) {
+        entitytainer_add_child( entitytainer, 40, 41 + i_child );
+    }
+
+    for ( TheEntitytainerEntity i_child = 0; i_child < 15; ++i_child ) {
+        ASSERT( entitytainer_get_parent( entitytainer, 41 + i_child ) == 40 );
+        ASSERT( entitytainer_get_child_index( entitytainer, 40, 41 + i_child ) == i_child );
+    }
+
+    for ( TheEntitytainerEntity i_child = 0; i_child < 8; ++i_child ) {
+        entitytainer_remove_entity( entitytainer, 41 + i_child );
+    }
+
+    int                    num_children;
+    TheEntitytainerEntity* children;
+    entitytainer_get_children( entitytainer, 40, &children, &num_children );
+    ASSERT( children[0] == 49 );
+    ASSERT( num_children == 7 );
+
+    entitytainer_add_entity( entitytainer, 41 );
+    ASSERT( entitytainer_get_parent( entitytainer, 41 ) == 0 );
+    ASSERT( entitytainer_num_children( entitytainer, 41 ) == 0 );
 }
 
 static void
@@ -127,7 +151,7 @@ unittest_run_base( UnitTestData* testdata ) {
     testdata->num_tests = 0;
 
     int   max_num_entries     = 1024;
-    int   bucket_sizes[]      = { 4, 16, 256 };
+    int   bucket_sizes[]      = { 4, 8, 16 };
     int   bucket_list_sizes[] = { 4, 2, 2 };
     int   needed_memory_size  = entitytainer_needed_size( max_num_entries, bucket_sizes, bucket_list_sizes, 3 );
     void* memory              = malloc( needed_memory_size );

@@ -4,10 +4,13 @@
 
 A single header library for managing entity hierarchies.
 
-Basically a multimap implementation in C, aimed at game development.
+Basically a multimap (not really) implementation in C, aimed at game development.
 
-Its main purpose is to keep track of hierarchies of entities. This can be useful for attachments (e.g. holding a weapon in
-the hand) and inventory (having a piece of cheese in a bag in the backpack on the back of a character) or a workplace hierarchy, keeping track of who's the boss of who, for example.
+Its main purpose is to keep track of hierarchies of entities. This can be useful for:
+
+* Attachments (e.g. holding a weapon in the hand) i
+* Inventory (having a piece of cheese in a bag in the backpack on the back of a character)
+* A workplace hierarchy, keeping track of who's the boss of who, for example.
 
 ## Problem statement
 

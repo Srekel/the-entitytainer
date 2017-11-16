@@ -104,7 +104,7 @@ typedef short TheEntitytainerEntity;
 #endif
 
 #ifndef ENTITYTAINER_Entry
-typedef short TheEntitytainerEntry;
+typedef unsigned short TheEntitytainerEntry;
 #define ENTITYTAINER_BucketMask 0x3f
 #endif
 
