@@ -1,3 +1,4 @@
+/* clang-format off */
 
 /*
 the_entitytainer.h - v0.01 - public domain - Anders Elfgren @srekel, 2017
@@ -514,3 +515,5 @@ ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ------------------------------------------------------------------------------
 */
+
+/* clang-format on */
