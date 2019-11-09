@@ -1,4 +1,4 @@
-/* clang-format off */
+//* clang-format off */
 
 /*
 the_entitytainer.h - v0.01 - public domain - Anders Elfgren @srekel, 2019
@@ -80,7 +80,7 @@ extern "C" {
 #ifndef ENTITYTAINER_ENABLE_WARNINGS
 #ifdef _MSC_VER
 #pragma warning( push, 0 )
-#pragma warning( disable: 4365 )
+#pragma warning( disable : 4365 )
 #endif
 
 #ifdef __clang__
@@ -108,7 +108,7 @@ extern "C" {
 
 #ifndef ENTITYTAINER_Entity
 typedef unsigned short TheEntitytainerEntity;
-#define ENTITYTAINER_InvalidEntity ((TheEntitytainerEntity)0u)
+#define ENTITYTAINER_InvalidEntity ( (TheEntitytainerEntity)0u )
 #endif
 
 #ifndef ENTITYTAINER_Entry
@@ -118,7 +118,7 @@ typedef unsigned short TheEntitytainerEntry;
 #define ENTITYTAINER_BucketListOffset ( sizeof( TheEntitytainerEntry ) * 8 - ENTITYTAINER_BucketListBitCount )
 #endif
 
-#define ENTITYTAINER_NoFreeBucket ((TheEntitytainerEntity)-1)
+#define ENTITYTAINER_NoFreeBucket ( (TheEntitytainerEntity)-1 )
 #define ENTITYTAINER_ShrinkMargin 1
 
 #if defined( ENTITYTAINER_STATIC )
@@ -154,11 +154,13 @@ typedef struct {
     bool                       remove_with_holes;
 } TheEntitytainer;
 
-ENTITYTAINER_API void
-entitytainer_remove_child_no_holes( TheEntitytainer* entitytainer, TheEntitytainerEntity parent, TheEntitytainerEntity child );
+ENTITYTAINER_API void entitytainer_remove_child_no_holes( TheEntitytainer*      entitytainer,
+                                                          TheEntitytainerEntity parent,
+                                                          TheEntitytainerEntity child );
 
-ENTITYTAINER_API void
-entitytainer_remove_child_with_holes( TheEntitytainer* entitytainer, TheEntitytainerEntity parent, TheEntitytainerEntity child );
+ENTITYTAINER_API void entitytainer_remove_child_with_holes( TheEntitytainer*      entitytainer,
+                                                            TheEntitytainerEntity parent,
+                                                            TheEntitytainerEntity child );
 
 ENTITYTAINER_API int
 entitytainer_needed_size( int num_entries, int* bucket_sizes, int* bucket_list_sizes, int num_bucket_lists ) {
@@ -182,7 +184,7 @@ ENTITYTAINER_API TheEntitytainer*
     char* buffer       = buffer_start;
     ENTITYTAINER_memset( buffer, 0, config->memory_size );
 
-    TheEntitytainer* entitytainer = (TheEntitytainer*)buffer;
+    TheEntitytainer* entitytainer   = (TheEntitytainer*)buffer;
     entitytainer->remove_with_holes = config->remove_with_holes;
 
     buffer += sizeof( TheEntitytainer );
@@ -316,7 +318,7 @@ entitytainer_remove_entity( TheEntitytainer* entitytainer, TheEntitytainerEntity
     TheEntitytainerEntry lookup = entitytainer->entry_lookup[entity];
 
     if ( entitytainer->entry_parent_lookup[entity] != 0 ) {
-        if (entitytainer->remove_with_holes) {
+        if ( entitytainer->remove_with_holes ) {
             entitytainer_remove_child_with_holes( entitytainer, entitytainer->entry_parent_lookup[entity], entity );
         }
         else {
@@ -382,15 +384,15 @@ entitytainer_add_child( TheEntitytainer* entitytainer, TheEntitytainerEntity par
     // Update count and insert child into bucket
     int count = bucket[0] + 1;
     bucket[0] = count;
-    if (entitytainer->remove_with_holes) {
+    if ( entitytainer->remove_with_holes ) {
         int i = 1;
         for ( ; i < count; ++i ) {
-            if (bucket[i] == ENTITYTAINER_InvalidEntity) {
+            if ( bucket[i] == ENTITYTAINER_InvalidEntity ) {
                 bucket[i] = child;
                 break;
             }
         }
-        if (i == count) {
+        if ( i == count ) {
             // Didn't find a "holed" slot, add child to the end.
             bucket[i] = child;
         }
@@ -403,7 +405,9 @@ entitytainer_add_child( TheEntitytainer* entitytainer, TheEntitytainerEntity par
 }
 
 ENTITYTAINER_API void
-entitytainer_remove_child_no_holes( TheEntitytainer* entitytainer, TheEntitytainerEntity parent, TheEntitytainerEntity child ) {
+entitytainer_remove_child_no_holes( TheEntitytainer*      entitytainer,
+                                    TheEntitytainerEntity parent,
+                                    TheEntitytainerEntity child ) {
     TheEntitytainerEntry lookup = entitytainer->entry_lookup[parent];
     ENTITYTAINER_assert( lookup != 0 );
     int                        bucket_list_index = lookup >> ENTITYTAINER_BucketListOffset;
@@ -413,9 +417,9 @@ entitytainer_remove_child_no_holes( TheEntitytainer* entitytainer, TheEntitytain
     TheEntitytainerEntity*     bucket            = (TheEntitytainerEntity*)( bucket_list->bucket_data + bucket_offset );
 
     // Remove child from bucket, move children after forward one step.
-    int                    num_children = bucket[0];
-    TheEntitytainerEntity* child_to_move   = &bucket[1];
-    int                    count      = 0;
+    int                    num_children  = bucket[0];
+    TheEntitytainerEntity* child_to_move = &bucket[1];
+    int                    count         = 0;
     while ( *child_to_move != child && count < num_children ) {
         ++count;
         ++child_to_move;
@@ -424,7 +428,7 @@ entitytainer_remove_child_no_holes( TheEntitytainer* entitytainer, TheEntitytain
     ASSERT( count < num_children );
 
     for ( ; count < num_children - 1; ++count ) {
-        *child_to_move = *(child_to_move + 1);
+        *child_to_move = *( child_to_move + 1 );
         ++child_to_move;
     }
 
@@ -460,8 +464,10 @@ entitytainer_remove_child_no_holes( TheEntitytainer* entitytainer, TheEntitytain
 }
 
 ENTITYTAINER_API void
-entitytainer_remove_child_with_holes( TheEntitytainer* entitytainer, TheEntitytainerEntity parent, TheEntitytainerEntity child ) {
-    ENTITYTAINER_assert(entitytainer->remove_with_holes);
+entitytainer_remove_child_with_holes( TheEntitytainer*      entitytainer,
+                                      TheEntitytainerEntity parent,
+                                      TheEntitytainerEntity child ) {
+    ENTITYTAINER_assert( entitytainer->remove_with_holes );
     TheEntitytainerEntry lookup = entitytainer->entry_lookup[parent];
     ENTITYTAINER_assert( lookup != 0 );
     int                        bucket_list_index = lookup >> ENTITYTAINER_BucketListOffset;
@@ -475,16 +481,16 @@ entitytainer_remove_child_with_holes( TheEntitytainer* entitytainer, TheEntityta
     int num_children        = bucket[0];
     int last_child_index    = 0;
     int child_to_move_index = 0;
-    for (int i = 1; i < capacity; i++) {
-        if (bucket[i] == child) {
+    for ( int i = 1; i < capacity; i++ ) {
+        if ( bucket[i] == child ) {
             child_to_move_index = i;
         }
-        else if (bucket[i] != ENTITYTAINER_InvalidEntity) {
+        else if ( bucket[i] != ENTITYTAINER_InvalidEntity ) {
             last_child_index = i;
         }
     }
 
-    ASSERT(child_to_move_index != 0);
+    ASSERT( child_to_move_index != 0 );
     bucket[child_to_move_index] = ENTITYTAINER_InvalidEntity;
 
     // Lower child count, clear entry
@@ -516,7 +522,6 @@ entitytainer_remove_child_with_holes( TheEntitytainer* entitytainer, TheEntityta
         lookup_new                                 = lookup_new | (TheEntitytainerEntry)bucket_index_new;
         entitytainer->entry_lookup[parent]         = lookup_new;
     }
-
 }
 
 ENTITYTAINER_API void
@@ -578,7 +583,7 @@ ENTITYTAINER_API TheEntitytainerEntity
 }
 
 ENTITYTAINER_API bool
-                 entitytainer_is_added( TheEntitytainer* entitytainer, TheEntitytainerEntity entity ) {
+entitytainer_is_added( TheEntitytainer* entitytainer, TheEntitytainerEntity entity ) {
     TheEntitytainerEntry lookup = entitytainer->entry_lookup[entity];
     return lookup != 0;
 }
