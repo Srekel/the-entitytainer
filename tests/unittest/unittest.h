@@ -12,4 +12,4 @@ typedef struct UnitTestData {
 void unittest_entitytainer_assert( bool test );
 
 void unittest_run_default(UnitTestData* testdata);
-void unittest_run_entity32(UnitTestData* testdata);
+// void unittest_run_entity32(UnitTestData* testdata);

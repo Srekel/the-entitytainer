@@ -3,6 +3,7 @@
 :bowtie:
 
 A single header library for managing entity hierarchies.
+A C99 single header library for managing entity hierarchies.
 
 Basically a multimap (not really) implementation in C, aimed at game development.
 
@@ -11,6 +12,7 @@ Its main purpose is to keep track of hierarchies of entities. This can be useful
 * Attachments (e.g. holding a weapon in the hand) i
 * Inventory (having a piece of cheese in a bag in the backpack on the back of a character)
 * A workplace hierarchy, keeping track of who's the boss of who, for example.
+* Managing a files-and-folders structure (not necessarily related to either games or entities!)
 
 ## Problem statement
 
@@ -53,6 +55,14 @@ This is what The Entitytainer solves.
 * There are unit tests!
   * They all pass.
   * They should cover most things but there could be cases I haven't tried yet.
+* Now optionally supports child lists with holes, for when you don't want to rearrange elements when you remove something in the middle.
+* Politely coded:
+  * C99 compatible (or aims to be).
+  * Platform agnostic (or aims to be).
+  * Zero dependencies.
+  * Built with maximum/pedantic warnings, and warnings as error.
+  * Code formatted with clang-format.
+  * There are unit tests!
 
 ## Current status
 

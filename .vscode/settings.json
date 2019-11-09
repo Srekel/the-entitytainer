@@ -1,5 +1,9 @@
 {
     "cSpell.words": [
         "entitytainer"
-    ]
+    ],
+    "files.associations": {
+        "*.shader": "cpp",
+        "the_entitytainer.h": "c"
+    }
 }

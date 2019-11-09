@@ -3,7 +3,9 @@
   <ItemGroup>
     <ClCompile Include="unittest.c" />
     <ClCompile Include="unittest_default.c" />
-    <ClCompile Include="unittest_entity_32.c" />
     <ClCompile Include="unittest_base.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\the_entitytainer.h" />
   </ItemGroup>
 </Project>

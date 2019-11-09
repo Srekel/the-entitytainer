@@ -27,7 +27,7 @@ main( int argc, char** argv ) {
     memset( &g_testdata, 0, sizeof( g_testdata ) );
     UnitTestData* testdata = &g_testdata;
 
-    unittest_run_entity32( testdata );
+    // unittest_run_entity32( testdata );
     unittest_run_default( testdata );
 
     // A bit of a hack.
