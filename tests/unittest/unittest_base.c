@@ -218,6 +218,59 @@ do_single_parent_hole_tests( TheEntitytainer* entitytainer ) {
 }
 
 static void
+do_reserve_tests( TheEntitytainer* entitytainer ) {
+    entitytainer_add_entity( entitytainer, 10 );
+
+    int                    num_children;
+    int                    capacity;
+    TheEntitytainerEntity* children;
+    entitytainer_get_children( entitytainer, 10, &children, &num_children, &capacity );
+    ASSERT( num_children == 0 );
+    ASSERT( capacity == 3 );
+
+    entitytainer_add_child( entitytainer, 10, 20 );
+    entitytainer_add_child( entitytainer, 10, 21 );
+    entitytainer_add_child( entitytainer, 10, 22 );
+    entitytainer_get_children( entitytainer, 10, &children, &num_children, &capacity );
+    ASSERT( num_children == 3 );
+    ASSERT( capacity == 3 );
+
+    entitytainer_reserve(entitytainer, 10, 5);
+    entitytainer_get_children( entitytainer, 10, &children, &num_children, &capacity );
+    ASSERT( num_children == 3 );
+    ASSERT( capacity == 7 );
+
+    entitytainer_remove_child_with_holes( entitytainer, 10, 22 );
+    entitytainer_remove_child_with_holes( entitytainer, 10, 21 );
+    entitytainer_remove_child_with_holes( entitytainer, 10, 20 );
+
+    entitytainer_get_children( entitytainer, 10, &children, &num_children, &capacity );
+    ASSERT( num_children == 0 );
+    ASSERT( capacity == 7 );
+
+    entitytainer_add_child( entitytainer, 10, 20 );
+    entitytainer_add_child( entitytainer, 10, 21 );
+    entitytainer_add_child( entitytainer, 10, 22 );
+    entitytainer_add_child( entitytainer, 10, 23 );
+    entitytainer_add_child( entitytainer, 10, 24 );
+    entitytainer_add_child( entitytainer, 10, 25 );
+    entitytainer_add_child( entitytainer, 10, 26 );
+
+    entitytainer_get_children( entitytainer, 10, &children, &num_children, &capacity );
+    ASSERT( num_children == 7 );
+    ASSERT( capacity == 7 );
+
+    entitytainer_remove_child_with_holes( entitytainer, 10, 25 );
+    entitytainer_remove_child_with_holes( entitytainer, 10, 23 );
+    entitytainer_remove_child_with_holes( entitytainer, 10, 24 );
+    entitytainer_remove_child_with_holes( entitytainer, 10, 22 );
+
+    entitytainer_get_children( entitytainer, 10, &children, &num_children, &capacity );
+    ASSERT( num_children == 3 );
+    ASSERT( capacity == 7 );
+}
+
+static void
 unittest_run_base( UnitTestData* testdata ) {
     testdata->num_tests = 0;
 
@@ -253,6 +306,11 @@ unittest_run_base( UnitTestData* testdata ) {
     config.remove_with_holes = true;
     entitytainer = entitytainer_create(&config);
     do_single_parent_hole_tests( entitytainer );
+
+    memset(config.memory, 0, config.memory_size);
+    config.keep_capacity_on_remove = true;
+    entitytainer = entitytainer_create(&config);
+    do_reserve_tests( entitytainer );
 
     printf( "Run errors found:   %u/%u\n", testdata->error_index, testdata->num_tests );
 

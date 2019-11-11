@@ -2,7 +2,6 @@
 
 :bowtie:
 
-A single header library for managing entity hierarchies.
 A C99 single header library for managing entity hierarchies.
 
 Basically a multimap (not really) implementation in C, aimed at game development.
@@ -47,19 +46,12 @@ This is what The Entitytainer solves.
 * O(1) lookup, add, removal.
   * That said, you have to pay the price of a few indirections and a bit of math. Only you and your platform can say whether that's better or worse than a lot of small allocations.
 * Reverse lookup to get parent from a child.
-* C99 compatible (or aims to be).
-* Platform agnostic (or aims to be).
-* Zero dependencies.
-* Built with maximum/pedantic warnings, and warnings as error.
-* Code formatted with clang-format.
-* There are unit tests!
-  * They all pass.
-  * They should cover most things but there could be cases I haven't tried yet.
-* Now optionally supports child lists with holes, for when you don't want to rearrange elements when you remove something in the middle.
+* Optionally supports child lists with holes, for when you don't want to rearrange elements when you remove something in the middle.
+* Optionally supports not shrinking to a smaller bucket when removing children.
 * Politely coded:
   * C99 compatible (or aims to be).
   * Platform agnostic (or aims to be).
-  * Zero dependencies.
+  * Zero dependencies. (overridable #defines for all standard functions, e.g. memcpy)
   * Built with maximum/pedantic warnings, and warnings as error.
   * Code formatted with clang-format.
   * There are unit tests!
