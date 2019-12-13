@@ -235,7 +235,7 @@ do_reserve_tests( TheEntitytainer* entitytainer ) {
     ASSERT( num_children == 3 );
     ASSERT( capacity == 3 );
 
-    entitytainer_reserve(entitytainer, 10, 5);
+    entitytainer_reserve( entitytainer, 10, 5 );
     entitytainer_get_children( entitytainer, 10, &children, &num_children, &capacity );
     ASSERT( num_children == 3 );
     ASSERT( capacity == 7 );
@@ -271,6 +271,58 @@ do_reserve_tests( TheEntitytainer* entitytainer ) {
 }
 
 static void
+do_multi_entity_tests( TheEntitytainer* entitytainer ) {
+    entitytainer_add_entity( entitytainer, 10 );
+
+    int                    num_children;
+    int                    capacity;
+    TheEntitytainerEntity* children;
+    entitytainer_get_children( entitytainer, 10, &children, &num_children, &capacity );
+    ASSERT( num_children == 0 );
+    ASSERT( capacity == 3 );
+
+    entitytainer_add_child( entitytainer, 10, 20 );
+    entitytainer_add_child( entitytainer, 10, 21 );
+    entitytainer_add_child( entitytainer, 10, 22 );
+    entitytainer_get_children( entitytainer, 10, &children, &num_children, &capacity );
+    ASSERT( num_children == 3 );
+    ASSERT( capacity == 3 );
+
+    entitytainer_add_entity( entitytainer, 100 );
+    entitytainer_get_children( entitytainer, 100, &children, &num_children, &capacity );
+    ASSERT( num_children == 0 );
+    ASSERT( capacity == 3 );
+    ASSERT( children[0] == 0 );
+    ASSERT( children[1] == 0 );
+    ASSERT( children[2] == 0 );
+
+    entitytainer_add_child( entitytainer, 100, 120 );
+    entitytainer_add_child( entitytainer, 100, 121 );
+    entitytainer_add_child( entitytainer, 100, 122 );
+
+    // This is the real test - 10's old bicked should be freed and then given to 1000
+    entitytainer_add_child( entitytainer, 10, 23 );
+    entitytainer_get_children( entitytainer, 10, &children, &num_children, &capacity );
+    ASSERT( num_children == 4 );
+    ASSERT( capacity == 7 );
+
+    entitytainer_add_entity( entitytainer, 1000 );
+    entitytainer_get_children( entitytainer, 1000, &children, &num_children, &capacity );
+    ASSERT( num_children == 0 );
+    ASSERT( capacity == 3 );
+    ASSERT( children[0] == 0 );
+    ASSERT( children[1] == 0 );
+    ASSERT( children[2] == 0 );
+
+    entitytainer_get_children( entitytainer, 100, &children, &num_children, &capacity );
+    ASSERT( num_children == 3 );
+    ASSERT( capacity == 3 );
+    ASSERT( children[0] == 120 );
+    ASSERT( children[1] == 121 );
+    ASSERT( children[2] == 122 );
+}
+
+static void
 unittest_run_base( UnitTestData* testdata ) {
     testdata->num_tests = 0;
 
@@ -302,15 +354,20 @@ unittest_run_base( UnitTestData* testdata ) {
     do_single_parent_tests( entitytainer );
     do_multi_parent_tests( entitytainer );
 
-    memset(config.memory, 0, config.memory_size);
+    memset( config.memory, 0, config.memory_size );
     config.remove_with_holes = true;
-    entitytainer = entitytainer_create(&config);
+    entitytainer             = entitytainer_create( &config );
     do_single_parent_hole_tests( entitytainer );
 
-    memset(config.memory, 0, config.memory_size);
+    memset( config.memory, 0, config.memory_size );
     config.keep_capacity_on_remove = true;
-    entitytainer = entitytainer_create(&config);
+    entitytainer                   = entitytainer_create( &config );
     do_reserve_tests( entitytainer );
+
+    memset( config.memory, 0, config.memory_size );
+    config.keep_capacity_on_remove = true;
+    entitytainer                   = entitytainer_create( &config );
+    do_multi_entity_tests( entitytainer );
 
     printf( "Run errors found:   %u/%u\n", testdata->error_index, testdata->num_tests );
 
