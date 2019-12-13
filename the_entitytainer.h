@@ -86,6 +86,9 @@ extern "C" {
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wold-style-cast"
+#pragma clang diagnostic ignored "-Wsign-conversion"
+#pragma clang diagnostic ignored "-Wcast-align"
+#pragma clang diagnostic ignored "-Wunused-function"
 #endif
 #endif // ENTITYTAINER_ENABLE_WARNINGS
 
@@ -377,8 +380,8 @@ entitytainer_reserve( TheEntitytainer* entitytainer, TheEntitytainerEntity paren
     if ( bucket_list_new->first_free_bucket != ENTITYTAINER_NoFreeBucket ) {
         // There's a freed bucket available
         bucket_index_new                   = bucket_list_new->first_free_bucket;
-        int bucket_offset                  = bucket_index_new * bucket_list_new->bucket_size;
-        bucket_list_new->first_free_bucket = bucket_list_new->bucket_data[bucket_offset];
+        int bucket_offset_new              = bucket_index_new * bucket_list_new->bucket_size;
+        bucket_list_new->first_free_bucket = bucket_list_new->bucket_data[bucket_offset_new];
     }
 
     int                    bucket_offset_new = bucket_index_new * bucket_list_new->bucket_size;
@@ -413,8 +416,8 @@ entitytainer_add_child( TheEntitytainer* entitytainer, TheEntitytainerEntity par
         if ( bucket_list_new->first_free_bucket != ENTITYTAINER_NoFreeBucket ) {
             // There's a freed bucket available
             bucket_index_new                   = bucket_list_new->first_free_bucket;
-            int bucket_offset                  = bucket_index_new * bucket_list_new->bucket_size;
-            bucket_list_new->first_free_bucket = bucket_list_new->bucket_data[bucket_offset];
+            int bucket_offset_new              = bucket_index_new * bucket_list_new->bucket_size;
+            bucket_list_new->first_free_bucket = bucket_list_new->bucket_data[bucket_offset_new];
         }
 
         int                    bucket_offset_new = bucket_index_new * bucket_list_new->bucket_size;
@@ -500,8 +503,8 @@ entitytainer_remove_child_no_holes( TheEntitytainer*      entitytainer,
         if ( bucket_list_new->first_free_bucket != ENTITYTAINER_NoFreeBucket ) {
             // There's a freed bucket available
             bucket_index_new                   = bucket_list_new->first_free_bucket;
-            int bucket_offset                  = bucket_index_new * bucket_list_new->bucket_size;
-            bucket_list_new->first_free_bucket = bucket_list_new->bucket_data[bucket_offset];
+            int bucket_offset_new              = bucket_index_new * bucket_list_new->bucket_size;
+            bucket_list_new->first_free_bucket = bucket_list_new->bucket_data[bucket_offset_new];
         }
 
         int                    bucket_offset_new = bucket_index_new * bucket_list_new->bucket_size;
@@ -534,7 +537,6 @@ entitytainer_remove_child_with_holes( TheEntitytainer*      entitytainer,
 
     // Remove child from bucket, move children after forward one step.
     int capacity            = bucket_list->bucket_size;
-    int num_children        = bucket[0];
     int last_child_index    = 0;
     int child_to_move_index = 0;
     for ( int i = 1; i < capacity; i++ ) {
