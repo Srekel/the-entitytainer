@@ -302,8 +302,9 @@ do_multi_entity_tests( TheEntitytainer* entitytainer ) {
 
     // This is the real test - 10's old bicked should be freed and then given to 1000
     entitytainer_add_child( entitytainer, 10, 23 );
+    entitytainer_add_child( entitytainer, 10, 24 );
     entitytainer_get_children( entitytainer, 10, &children, &num_children, &capacity );
-    ASSERT( num_children == 4 );
+    ASSERT( num_children == 5 );
     ASSERT( capacity == 7 );
 
     entitytainer_add_entity( entitytainer, 1000 );
@@ -320,24 +321,42 @@ do_multi_entity_tests( TheEntitytainer* entitytainer ) {
     ASSERT( children[0] == 120 );
     ASSERT( children[1] == 121 );
     ASSERT( children[2] == 122 );
+
+    entitytainer_remove_child_no_holes( entitytainer, 10, 23 );
+    entitytainer_remove_child_no_holes( entitytainer, 10, 24 );
+    entitytainer_get_children( entitytainer, 10, &children, &num_children, &capacity );
+    ASSERT( num_children == 3 );
+    ASSERT( capacity == 3 );
+
+    entitytainer_add_child( entitytainer, 100, 123 );
+    entitytainer_get_children( entitytainer, 100, &children, &num_children, &capacity );
+    ASSERT( num_children == 4 );
+    ASSERT( capacity == 7 );
+    ASSERT( children[0] == 120 );
+    ASSERT( children[1] == 121 );
+    ASSERT( children[2] == 122 );
+    ASSERT( children[3] == 123 );
+    ASSERT( children[4] == 0 );
+    ASSERT( children[5] == 0 );
+    ASSERT( children[6] == 0 );
 }
 
 static void
 unittest_run_base( UnitTestData* testdata ) {
     testdata->num_tests = 0;
 
-    int max_num_entries     = 1024;
-    int bucket_sizes[]      = { 4, 8, 16 };
-    int bucket_list_sizes[] = { 4, 2, 2 };
-    int needed_memory_size  = entitytainer_needed_size( max_num_entries, bucket_sizes, bucket_list_sizes, 3 );
-    struct TheEntitytainerConfig config = { 0 };
-    config.memory                       = malloc( needed_memory_size );
-    config.memory_size                  = needed_memory_size;
-    config.num_entries                  = max_num_entries;
-    config.bucket_sizes                 = bucket_sizes;
-    config.bucket_list_sizes            = bucket_list_sizes;
-    config.num_bucket_lists             = 3;
-    config.remove_with_holes            = false;
+    int                          max_num_entries     = 1024;
+    int                          bucket_sizes[]      = { 4, 8, 16 };
+    int                          bucket_list_sizes[] = { 4, 2, 2 };
+    struct TheEntitytainerConfig config              = { 0 };
+    config.num_entries                               = max_num_entries;
+    config.bucket_sizes                              = bucket_sizes;
+    config.bucket_list_sizes                         = bucket_list_sizes;
+    config.num_bucket_lists                          = 3;
+    config.remove_with_holes                         = false;
+    int needed_memory_size                           = entitytainer_needed_size( &config );
+    config.memory                                    = malloc( needed_memory_size );
+    config.memory_size                               = needed_memory_size;
 
     TheEntitytainer* entitytainer = entitytainer_create( &config );
 
@@ -365,7 +384,7 @@ unittest_run_base( UnitTestData* testdata ) {
     do_reserve_tests( entitytainer );
 
     memset( config.memory, 0, config.memory_size );
-    config.keep_capacity_on_remove = true;
+    config.keep_capacity_on_remove = false;
     entitytainer                   = entitytainer_create( &config );
     do_multi_entity_tests( entitytainer );
 
