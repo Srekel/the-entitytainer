@@ -1,4 +1,4 @@
-/* clang-format off */
+//* clang-format off */
 
 /*
 the_entitytainer.h - v0.01 - public domain - Anders Elfgren @srekel, 2019
@@ -340,7 +340,7 @@ entitytainer_add_entity( TheEntitytainer* entitytainer, TheEntitytainerEntity en
 
     int                    bucket_offset = bucket_index * bucket_list->bucket_size;
     TheEntitytainerEntity* bucket        = bucket_list->bucket_data + bucket_offset;
-    ENTITYTAINER_memset( bucket, 0, sizeof( TheEntitytainerEntity ) * bucket_list->bucket_size );
+    ENTITYTAINER_memset( bucket, 0, bucket_list->bucket_size * sizeof( TheEntitytainerEntity ) );
 }
 
 ENTITYTAINER_API void
@@ -409,6 +409,7 @@ entitytainer_reserve( TheEntitytainer* entitytainer, TheEntitytainerEntity paren
 
     int                    bucket_offset_new = bucket_index_new * bucket_list_new->bucket_size;
     TheEntitytainerEntity* bucket_new        = bucket_list_new->bucket_data + bucket_offset_new;
+    ENTITYTAINER_memset( bucket_new, 0, bucket_list_new->bucket_size * sizeof( TheEntitytainerEntity ) );
     ENTITYTAINER_memcpy( bucket_new, bucket, bucket_list->bucket_size * sizeof( TheEntitytainerEntity ) );
 
     *bucket                        = (TheEntitytainerEntity)bucket_list->first_free_bucket;
@@ -447,6 +448,7 @@ entitytainer_add_child( TheEntitytainer* entitytainer, TheEntitytainerEntity par
 
         int                    bucket_offset_new = bucket_index_new * bucket_list_new->bucket_size;
         TheEntitytainerEntity* bucket_new        = bucket_list_new->bucket_data + bucket_offset_new;
+        ENTITYTAINER_memset( bucket_new, 0, bucket_list_new->bucket_size * sizeof( TheEntitytainerEntity ) );
         ENTITYTAINER_memcpy( bucket_new, bucket, bucket_list->bucket_size * sizeof( TheEntitytainerEntity ) );
 
         *bucket                        = (TheEntitytainerEntity)bucket_list->first_free_bucket;
@@ -511,6 +513,7 @@ entitytainer_add_child_at_index( TheEntitytainer*      entitytainer,
 
         int                    bucket_offset_new = bucket_index_new * bucket_list_new->bucket_size;
         TheEntitytainerEntity* bucket_new        = bucket_list_new->bucket_data + bucket_offset_new;
+        ENTITYTAINER_memset( bucket_new, 0, bucket_list_new->bucket_size * sizeof( TheEntitytainerEntity ) );
         ENTITYTAINER_memcpy( bucket_new, bucket, bucket_list->bucket_size * sizeof( TheEntitytainerEntity ) );
 
         bucket_list_new->used_buckets++;
