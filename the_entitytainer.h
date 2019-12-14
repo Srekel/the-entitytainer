@@ -745,7 +745,7 @@ entitytainer__ptr_to_aligned_ptr( void* ptr, int align ) {
 }
 #endif
 
-#ifndef DEBUGINATOR_ENABLE_WARNINGS
+#ifndef ENTITYTAINER_ENABLE_WARNINGS
 #ifdef _MSC_VER
 #pragma warning( pop )
 #endif
@@ -753,7 +753,7 @@ entitytainer__ptr_to_aligned_ptr( void* ptr, int align ) {
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
-#endif // DEBUGINATOR_ENABLE_WARNINGS
+#endif // ENTITYTAINER_ENABLE_WARNINGS
 
 #endif // INCLUDE_THE_ENTITYTAINER_H
 
