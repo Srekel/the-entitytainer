@@ -109,6 +109,16 @@ extern "C" {
 #define ENTITYTAINER_memset memset
 #endif
 
+#ifndef ENTITYTAINER_alignof
+#define ENTITYTAINER_alignof( type ) \
+    offsetof(                        \
+      struct {                       \
+          char c;                    \
+          type d;                    \
+      },                             \
+      d )
+#endif
+
 #ifndef ENTITYTAINER_Entity
 typedef unsigned short TheEntitytainerEntity;
 #define ENTITYTAINER_InvalidEntity ( (TheEntitytainerEntity)0u )
@@ -129,6 +139,8 @@ typedef unsigned short TheEntitytainerEntry;
 #else
 #define ENTITYTAINER_API extern
 #endif
+
+static void* entitytainer__ptr_to_aligned_ptr( void* ptr, int align );
 
 struct TheEntitytainerConfig {
     void* memory;
@@ -168,16 +180,21 @@ ENTITYTAINER_API void entitytainer_remove_child_with_holes( TheEntitytainer*    
                                                             TheEntitytainerEntity child );
 
 ENTITYTAINER_API int
-entitytainer_needed_size( int num_entries, int* bucket_sizes, int* bucket_list_sizes, int num_bucket_lists ) {
+entitytainer_needed_size( struct TheEntitytainerConfig* config ) {
     int size_needed = sizeof( TheEntitytainer );
-    size_needed += num_entries * sizeof( TheEntitytainerEntry );           // Lookup
-    size_needed += num_entries * sizeof( TheEntitytainerEntity );          // Reverse lookup
-    size_needed += num_bucket_lists * sizeof( TheEntitytainerBucketList ); // List structs
+    size_needed += config->num_entries * sizeof( TheEntitytainerEntry );           // Lookup
+    size_needed += config->num_entries * sizeof( TheEntitytainerEntity );          // Reverse lookup
+    size_needed += config->num_bucket_lists * sizeof( TheEntitytainerBucketList ); // List structs
 
     // Bucket lists
-    for ( int i = 0; i < num_bucket_lists; ++i ) {
-        size_needed += bucket_list_sizes[i] * bucket_sizes[i] * sizeof( TheEntitytainerEntity );
+    for ( int i = 0; i < config->num_bucket_lists; ++i ) {
+        size_needed += config->bucket_list_sizes[i] * config->bucket_sizes[i] * sizeof( TheEntitytainerEntity );
     }
+
+    // Account for struct alignment, with good margins :D
+    int things_to_align = 1 + config->num_bucket_lists;
+    int safe_alignment  = sizeof( void* ) * 16;
+    size_needed += things_to_align * safe_alignment;
 
     return size_needed;
 }
@@ -186,8 +203,9 @@ ENTITYTAINER_API TheEntitytainer*
                  entitytainer_create( struct TheEntitytainerConfig* config ) {
 
     char* buffer_start = (char*)config->memory;
-    char* buffer       = buffer_start;
-    ENTITYTAINER_memset( buffer, 0, config->memory_size );
+    ENTITYTAINER_memset( buffer_start, 0, config->memory_size );
+    char* buffer = buffer_start;
+    buffer       = (char*)entitytainer__ptr_to_aligned_ptr( buffer, (int)ENTITYTAINER_alignof( TheEntitytainer ) );
 
     TheEntitytainer* entitytainer         = (TheEntitytainer*)buffer;
     entitytainer->num_bucket_lists        = config->num_bucket_lists;
@@ -199,6 +217,8 @@ ENTITYTAINER_API TheEntitytainer*
     buffer += sizeof( TheEntitytainerEntry ) * config->num_entries;
     entitytainer->entry_parent_lookup = (TheEntitytainerEntity*)buffer;
     buffer += sizeof( TheEntitytainerEntity ) * config->num_entries;
+
+    buffer = (char*)entitytainer__ptr_to_aligned_ptr( buffer, (int)ENTITYTAINER_alignof( TheEntitytainerBucketList ) );
     entitytainer->bucket_lists = (TheEntitytainerBucketList*)buffer;
 
     char*                  bucket_list_end   = buffer + sizeof( TheEntitytainerBucketList ) * config->num_bucket_lists;
@@ -228,7 +248,7 @@ ENTITYTAINER_API TheEntitytainer*
     }
 
     ENTITYTAINER_assert( *bucket_data_start == 0 );
-    ENTITYTAINER_assert( (char*)bucket_data == buffer_start + config->memory_size );
+    ENTITYTAINER_assert( (char*)bucket_data <= buffer_start + config->memory_size );
     return entitytainer;
 }
 
@@ -706,6 +726,17 @@ ENTITYTAINER_API bool
 entitytainer_is_added( TheEntitytainer* entitytainer, TheEntitytainerEntity entity ) {
     TheEntitytainerEntry lookup = entitytainer->entry_lookup[entity];
     return lookup != 0;
+}
+
+static void*
+entitytainer__ptr_to_aligned_ptr( void* ptr, int align ) {
+    if ( align == 0 ) {
+        return ptr;
+    }
+
+    int   offset      = ( ~(int)ptr + 1 ) & ( align - 1 );
+    void* aligned_ptr = (char*)ptr + offset;
+    return aligned_ptr;
 }
 
 #endif // ENTITYTAINER_IMPLEMENTATION
