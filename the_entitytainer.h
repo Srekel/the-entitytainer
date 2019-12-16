@@ -774,7 +774,7 @@ entitytainer_save( TheEntitytainer* entitytainer, unsigned char* buffer, int buf
         return size;
     }
 
-    ENTITYTAINER_memcpy( buffer, (void*)entitytainer, size );
+    ENTITYTAINER_memcpy( buffer, entitytainer, size );
     return size;
 }
 
@@ -790,6 +790,10 @@ ENTITYTAINER_API TheEntitytainer*
     buffer += sizeof( TheEntitytainerEntry ) * entitytainer->entry_lookup_size;
     entitytainer->entry_parent_lookup = (TheEntitytainerEntity*)buffer;
     buffer += sizeof( TheEntitytainerEntity ) * entitytainer->entry_lookup_size;
+
+    buffer                     = (unsigned char*)entitytainer__ptr_to_aligned_ptr( buffer,
+                                                               (int)ENTITYTAINER_alignof( TheEntitytainerBucketList ) );
+    entitytainer->bucket_lists = (TheEntitytainerBucketList*)buffer;
 
     unsigned char* bucket_list_end = buffer + sizeof( TheEntitytainerBucketList ) * entitytainer->num_bucket_lists;
     TheEntitytainerEntity* bucket_data_start = (TheEntitytainerEntity*)bucket_list_end;

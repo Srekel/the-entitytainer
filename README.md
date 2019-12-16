@@ -47,6 +47,7 @@ This is what The Entitytainer solves.
   * That said, you have to pay the price of a few indirections and a bit of math. Only you and your platform can say whether that's better or worse than a lot of small allocations.
 * Reverse lookup to get parent from a child.
 * Optionally supports child lists with holes, for when you don't want to rearrange elements when you remove something in the middle.
+* Provides Save/Load that only does a single memcpy + a few pointer fixups.
 * Optionally supports not shrinking to a smaller bucket when removing children.
 * Politely coded:
   * C99 compatible (or aims to be).
@@ -54,25 +55,17 @@ This is what The Entitytainer solves.
   * Zero dependencies. (overridable #defines for all standard functions, e.g. memcpy)
   * Built with maximum/pedantic warnings, and warnings as error.
   * Code formatted with clang-format.
-  * There are unit tests!
+  * There are unit tests! A fair amount of them actually.
 
 ## Current status
 
-Seems to work.
+Seems to work. Is used in production.
 
 ## Known issues
 
 * Only tested on Windows 10 using VS 2017 running x64.
-* Only unit tested - not integration tested.
 * Reallocation is currently commented out due to some refactoring.
 * API is not finalized. Would like to add a bit more customization and allow for passing in arrays of entities instead of one at a time.
-* Improper single-header-style exposure of API.
-
-## Fun facts
-
-* I wrote almost the whole thing without compiling it once. It's kinda relaxing to work that way, not thinking too hard about syntax errors etc, just writing the code. Of course, writing it was the easy part. Making it actually work was the other 90%.
-* Most of The Entitytainer was written on the bus.
-* The name is a pun of entities and containers. If it wasn't obvious. Credit for this amazing name goes to @fzetterman from this thread: https://twitter.com/Srekel/status/919845253032660993
 
 ## How to use
 
@@ -95,6 +88,26 @@ ASSERT( num_children == 1 );
 ASSERT( children[0] == 10 );
 
 ```
+
+### Save / Load
+
+```C
+void save( TheEntitytainer* entitytainer ) {
+    int            buffer_size = entitytainer_save( entitytainer, NULL, 0 );
+    unsigned char* buffer      = malloc( buffer_size );
+    memset( buffer, 0, buffer_size );
+    entitytainer_save( entitytainer, buffer, buffer_size );
+    my_save_buffer_to_disk(buffer, buffer_size);
+}
+
+TheEntitytainer* load( const unsigned char* file_buffer, int buffer_size ) {
+    unsigned char* loaded_buffer = malloc( buffer_size );
+    memcpy( loaded_buffer, file_buffer, buffer_size );
+    TheEntitytainer* loaded = entitytainer_load( loaded_buffer, buffer_size );
+    return loaded; // Needs to be free'd
+}
+```
+
 
 ## How it works
 
