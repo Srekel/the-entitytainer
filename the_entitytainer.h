@@ -1,4 +1,4 @@
-//* clang-format off */
+/* clang-format off */
 
 /*
 the_entitytainer.h - v0.01 - public domain - Anders Elfgren @srekel, 2019
@@ -231,10 +231,10 @@ entitytainer_needed_size( struct TheEntitytainerConfig* config ) {
 ENTITYTAINER_API TheEntitytainer*
                  entitytainer_create( struct TheEntitytainerConfig* config ) {
 
-    char* buffer_start = (char*)config->memory;
+    unsigned char* buffer_start = (unsigned char*)config->memory;
     ENTITYTAINER_memset( buffer_start, 0, config->memory_size );
-    char* buffer = buffer_start;
-    buffer       = (char*)entitytainer__ptr_to_aligned_ptr( buffer, (int)ENTITYTAINER_alignof( TheEntitytainer ) );
+    unsigned char* buffer = buffer_start;
+    buffer = (unsigned char*)entitytainer__ptr_to_aligned_ptr( buffer, (int)ENTITYTAINER_alignof( TheEntitytainer ) );
 
     TheEntitytainer* entitytainer         = (TheEntitytainer*)buffer;
     entitytainer->num_bucket_lists        = config->num_bucket_lists;
@@ -248,10 +248,11 @@ ENTITYTAINER_API TheEntitytainer*
     entitytainer->entry_parent_lookup = (TheEntitytainerEntity*)buffer;
     buffer += sizeof( TheEntitytainerEntity ) * config->num_entries;
 
-    buffer = (char*)entitytainer__ptr_to_aligned_ptr( buffer, (int)ENTITYTAINER_alignof( TheEntitytainerBucketList ) );
+    buffer                     = (unsigned char*)entitytainer__ptr_to_aligned_ptr( buffer,
+                                                               (int)ENTITYTAINER_alignof( TheEntitytainerBucketList ) );
     entitytainer->bucket_lists = (TheEntitytainerBucketList*)buffer;
 
-    char*                  bucket_list_end   = buffer + sizeof( TheEntitytainerBucketList ) * config->num_bucket_lists;
+    unsigned char*         bucket_list_end   = buffer + sizeof( TheEntitytainerBucketList ) * config->num_bucket_lists;
     TheEntitytainerEntity* bucket_data_start = (TheEntitytainerEntity*)bucket_list_end;
     TheEntitytainerEntity* bucket_data       = bucket_data_start;
     for ( int i = 0; i < config->num_bucket_lists; ++i ) {
@@ -278,7 +279,7 @@ ENTITYTAINER_API TheEntitytainer*
     }
 
     ENTITYTAINER_assert( *bucket_data_start == 0 );
-    ENTITYTAINER_assert( (char*)bucket_data <= buffer_start + config->memory_size );
+    ENTITYTAINER_assert( (unsigned char*)bucket_data <= buffer_start + config->memory_size );
     return entitytainer;
 }
 
@@ -762,12 +763,12 @@ entitytainer_is_added( TheEntitytainer* entitytainer, TheEntitytainerEntity enti
 }
 
 ENTITYTAINER_API int
-entitytainer_save( TheEntitytainer* entitytainer, char* buffer, int buffer_size ) {
+entitytainer_save( TheEntitytainer* entitytainer, unsigned char* buffer, int buffer_size ) {
 
     TheEntitytainerBucketList* last       = &entitytainer->bucket_lists[entitytainer->num_bucket_lists - 1];
     TheEntitytainerEntity*     entity_end = last->bucket_data + last->bucket_size * last->total_buckets;
-    char*                      begin      = (char*)entitytainer;
-    char*                      end        = (char*)entity_end;
+    unsigned char*             begin      = (unsigned char*)entitytainer;
+    unsigned char*             end        = (unsigned char*)entity_end;
     int                        size       = (int)( end - begin );
     if ( size > buffer_size ) {
         return size;
@@ -778,7 +779,7 @@ entitytainer_save( TheEntitytainer* entitytainer, char* buffer, int buffer_size 
 }
 
 ENTITYTAINER_API TheEntitytainer*
-                 entitytainer_load( char* buffer, int buffer_size ) {
+                 entitytainer_load( unsigned char* buffer, int buffer_size ) {
     ENTITYTAINER_assert( entitytainer__ptr_to_aligned_ptr( buffer, (int)ENTITYTAINER_alignof( TheEntitytainer ) ) ==
                          buffer );
 
@@ -790,7 +791,7 @@ ENTITYTAINER_API TheEntitytainer*
     entitytainer->entry_parent_lookup = (TheEntitytainerEntity*)buffer;
     buffer += sizeof( TheEntitytainerEntity ) * entitytainer->entry_lookup_size;
 
-    char* bucket_list_end = buffer + sizeof( TheEntitytainerBucketList ) * entitytainer->num_bucket_lists;
+    unsigned char* bucket_list_end = buffer + sizeof( TheEntitytainerBucketList ) * entitytainer->num_bucket_lists;
     TheEntitytainerEntity* bucket_data_start = (TheEntitytainerEntity*)bucket_list_end;
     TheEntitytainerEntity* bucket_data       = bucket_data_start;
     for ( int i = 0; i < entitytainer->num_bucket_lists; ++i ) {
@@ -800,7 +801,7 @@ ENTITYTAINER_API TheEntitytainer*
         bucket_data += list->bucket_size * list->total_buckets;
     }
 
-    ENTITYTAINER_assert( (char*)bucket_data <= buffer + buffer_size );
+    ENTITYTAINER_assert( (unsigned char*)bucket_data <= buffer + buffer_size );
     return entitytainer;
 }
 

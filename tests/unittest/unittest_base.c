@@ -343,13 +343,13 @@ do_multi_entity_tests( TheEntitytainer* entitytainer ) {
 
 static void
 do_save_load_test( TheEntitytainer* entitytainer ) {
-    int   buffer_size = entitytainer_save( entitytainer, NULL, 0 );
-    char* buffer      = malloc( buffer_size );
+    int            buffer_size = entitytainer_save( entitytainer, NULL, 0 );
+    unsigned char* buffer      = malloc( buffer_size );
     memset( buffer, 0, buffer_size );
     entitytainer_save( entitytainer, buffer, buffer_size );
     ASSERT( memcmp( entitytainer, buffer, buffer_size ) == 0 );
 
-    char* loaded_buffer = malloc( buffer_size );
+    unsigned char* loaded_buffer = malloc( buffer_size );
     memset( loaded_buffer, 0, buffer_size );
     memcpy( loaded_buffer, buffer, buffer_size );
     TheEntitytainer* loaded = entitytainer_load( loaded_buffer, buffer_size );
