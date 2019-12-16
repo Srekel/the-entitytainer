@@ -201,6 +201,9 @@ ENTITYTAINER_API TheEntitytainerEntity entitytainer_get_parent( TheEntitytainer*
 
 ENTITYTAINER_API bool entitytainer_is_added( TheEntitytainer* entitytainer, TheEntitytainerEntity entity );
 
+ENTITYTAINER_API int entitytainer_save( TheEntitytainer* entitytainer, unsigned char* buffer, int buffer_size );
+ENTITYTAINER_API TheEntitytainer* entitytainer_load( unsigned char* buffer, int buffer_size );
+
 #ifdef ENTITYTAINER_IMPLEMENTATION
 
 static void* entitytainer__ptr_to_aligned_ptr( void* ptr, int align );
@@ -237,6 +240,7 @@ ENTITYTAINER_API TheEntitytainer*
     entitytainer->num_bucket_lists        = config->num_bucket_lists;
     entitytainer->remove_with_holes       = config->remove_with_holes;
     entitytainer->keep_capacity_on_remove = config->keep_capacity_on_remove;
+    entitytainer->entry_lookup_size       = config->num_entries;
 
     buffer += sizeof( TheEntitytainer );
     entitytainer->entry_lookup = (TheEntitytainerEntry*)buffer;
@@ -755,6 +759,49 @@ ENTITYTAINER_API bool
 entitytainer_is_added( TheEntitytainer* entitytainer, TheEntitytainerEntity entity ) {
     TheEntitytainerEntry lookup = entitytainer->entry_lookup[entity];
     return lookup != 0;
+}
+
+ENTITYTAINER_API int
+entitytainer_save( TheEntitytainer* entitytainer, char* buffer, int buffer_size ) {
+
+    TheEntitytainerBucketList* last       = &entitytainer->bucket_lists[entitytainer->num_bucket_lists - 1];
+    TheEntitytainerEntity*     entity_end = last->bucket_data + last->bucket_size * last->total_buckets;
+    char*                      begin      = (char*)entitytainer;
+    char*                      end        = (char*)entity_end;
+    int                        size       = (int)( end - begin );
+    if ( size > buffer_size ) {
+        return size;
+    }
+
+    ENTITYTAINER_memcpy( buffer, (void*)entitytainer, size );
+    return size;
+}
+
+ENTITYTAINER_API TheEntitytainer*
+                 entitytainer_load( char* buffer, int buffer_size ) {
+    ENTITYTAINER_assert( entitytainer__ptr_to_aligned_ptr( buffer, (int)ENTITYTAINER_alignof( TheEntitytainer ) ) ==
+                         buffer );
+
+    // Fix pointers
+    TheEntitytainer* entitytainer = (TheEntitytainer*)buffer;
+    buffer += sizeof( TheEntitytainer );
+    entitytainer->entry_lookup = (TheEntitytainerEntry*)buffer;
+    buffer += sizeof( TheEntitytainerEntry ) * entitytainer->entry_lookup_size;
+    entitytainer->entry_parent_lookup = (TheEntitytainerEntity*)buffer;
+    buffer += sizeof( TheEntitytainerEntity ) * entitytainer->entry_lookup_size;
+
+    char* bucket_list_end = buffer + sizeof( TheEntitytainerBucketList ) * entitytainer->num_bucket_lists;
+    TheEntitytainerEntity* bucket_data_start = (TheEntitytainerEntity*)bucket_list_end;
+    TheEntitytainerEntity* bucket_data       = bucket_data_start;
+    for ( int i = 0; i < entitytainer->num_bucket_lists; ++i ) {
+        TheEntitytainerBucketList* list = (TheEntitytainerBucketList*)buffer;
+        list->bucket_data               = bucket_data;
+        buffer += sizeof( TheEntitytainerBucketList );
+        bucket_data += list->bucket_size * list->total_buckets;
+    }
+
+    ENTITYTAINER_assert( (char*)bucket_data <= buffer + buffer_size );
+    return entitytainer;
 }
 
 static void*

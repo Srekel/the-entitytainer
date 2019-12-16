@@ -288,17 +288,17 @@ do_multi_entity_tests( TheEntitytainer* entitytainer ) {
     ASSERT( num_children == 3 );
     ASSERT( capacity == 3 );
 
-    entitytainer_add_entity( entitytainer, 100 );
-    entitytainer_get_children( entitytainer, 100, &children, &num_children, &capacity );
+    entitytainer_add_entity( entitytainer, 30 );
+    entitytainer_get_children( entitytainer, 30, &children, &num_children, &capacity );
     ASSERT( num_children == 0 );
     ASSERT( capacity == 3 );
     ASSERT( children[0] == 0 );
     ASSERT( children[1] == 0 );
     ASSERT( children[2] == 0 );
 
-    entitytainer_add_child( entitytainer, 100, 120 );
-    entitytainer_add_child( entitytainer, 100, 121 );
-    entitytainer_add_child( entitytainer, 100, 122 );
+    entitytainer_add_child( entitytainer, 30, 31 );
+    entitytainer_add_child( entitytainer, 30, 32 );
+    entitytainer_add_child( entitytainer, 30, 33 );
 
     // This is the real test - 10's old bicked should be freed and then given to 1000
     entitytainer_add_child( entitytainer, 10, 23 );
@@ -307,20 +307,20 @@ do_multi_entity_tests( TheEntitytainer* entitytainer ) {
     ASSERT( num_children == 5 );
     ASSERT( capacity == 7 );
 
-    entitytainer_add_entity( entitytainer, 1000 );
-    entitytainer_get_children( entitytainer, 1000, &children, &num_children, &capacity );
+    entitytainer_add_entity( entitytainer, 40 );
+    entitytainer_get_children( entitytainer, 40, &children, &num_children, &capacity );
     ASSERT( num_children == 0 );
     ASSERT( capacity == 3 );
     ASSERT( children[0] == 0 );
     ASSERT( children[1] == 0 );
     ASSERT( children[2] == 0 );
 
-    entitytainer_get_children( entitytainer, 100, &children, &num_children, &capacity );
+    entitytainer_get_children( entitytainer, 30, &children, &num_children, &capacity );
     ASSERT( num_children == 3 );
     ASSERT( capacity == 3 );
-    ASSERT( children[0] == 120 );
-    ASSERT( children[1] == 121 );
-    ASSERT( children[2] == 122 );
+    ASSERT( children[0] == 31 );
+    ASSERT( children[1] == 32 );
+    ASSERT( children[2] == 33 );
 
     entitytainer_remove_child_no_holes( entitytainer, 10, 23 );
     entitytainer_remove_child_no_holes( entitytainer, 10, 24 );
@@ -328,24 +328,43 @@ do_multi_entity_tests( TheEntitytainer* entitytainer ) {
     ASSERT( num_children == 3 );
     ASSERT( capacity == 3 );
 
-    entitytainer_add_child( entitytainer, 100, 123 );
-    entitytainer_get_children( entitytainer, 100, &children, &num_children, &capacity );
+    entitytainer_add_child( entitytainer, 30, 34 );
+    entitytainer_get_children( entitytainer, 30, &children, &num_children, &capacity );
     ASSERT( num_children == 4 );
     ASSERT( capacity == 7 );
-    ASSERT( children[0] == 120 );
-    ASSERT( children[1] == 121 );
-    ASSERT( children[2] == 122 );
-    ASSERT( children[3] == 123 );
+    ASSERT( children[0] == 31 );
+    ASSERT( children[1] == 32 );
+    ASSERT( children[2] == 33 );
+    ASSERT( children[3] == 34 );
     ASSERT( children[4] == 0 );
     ASSERT( children[5] == 0 );
     ASSERT( children[6] == 0 );
 }
 
 static void
+do_save_load_test( TheEntitytainer* entitytainer ) {
+    int   buffer_size = entitytainer_save( entitytainer, NULL, 0 );
+    char* buffer      = malloc( buffer_size );
+    memset( buffer, 0, buffer_size );
+    entitytainer_save( entitytainer, buffer, buffer_size );
+    ASSERT( memcmp( entitytainer, buffer, buffer_size ) == 0 );
+
+    char* loaded_buffer = malloc( buffer_size );
+    memset( loaded_buffer, 0, buffer_size );
+    memcpy( loaded_buffer, buffer, buffer_size );
+    TheEntitytainer* loaded = entitytainer_load( loaded_buffer, buffer_size );
+
+    memcpy( buffer, loaded, buffer_size );
+    TheEntitytainer* loaded2 = entitytainer_load( buffer, buffer_size );
+    // ASSERT( memcmp( entitytainer, &buffer, buffer_size ) == 0 );
+    (void)loaded2;
+}
+
+static void
 unittest_run_base( UnitTestData* testdata ) {
     testdata->num_tests = 0;
 
-    int                          max_num_entries     = 1024;
+    int                          max_num_entries     = 64;
     int                          bucket_sizes[]      = { 4, 8, 16 };
     int                          bucket_list_sizes[] = { 4, 2, 2 };
     struct TheEntitytainerConfig config              = { 0 };
@@ -377,16 +396,19 @@ unittest_run_base( UnitTestData* testdata ) {
     config.remove_with_holes = true;
     entitytainer             = entitytainer_create( &config );
     do_single_parent_hole_tests( entitytainer );
+    do_save_load_test( entitytainer );
 
     memset( config.memory, 0, config.memory_size );
     config.keep_capacity_on_remove = true;
     entitytainer                   = entitytainer_create( &config );
     do_reserve_tests( entitytainer );
+    do_save_load_test( entitytainer );
 
     memset( config.memory, 0, config.memory_size );
     config.keep_capacity_on_remove = false;
     entitytainer                   = entitytainer_create( &config );
     do_multi_entity_tests( entitytainer );
+    do_save_load_test( entitytainer );
 
     printf( "Run errors found:   %u/%u\n", testdata->error_index, testdata->num_tests );
 
