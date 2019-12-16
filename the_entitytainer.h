@@ -92,8 +92,6 @@ extern "C" {
 #endif
 #endif // ENTITYTAINER_ENABLE_WARNINGS
 
-#ifdef ENTITYTAINER_IMPLEMENTATION
-
 #ifndef ENTITYTAINER_assert
 #include <assert.h>
 #define ENTITYTAINER_assert assert;
@@ -140,8 +138,6 @@ typedef unsigned short TheEntitytainerEntry;
 #define ENTITYTAINER_API extern
 #endif
 
-static void* entitytainer__ptr_to_aligned_ptr( void* ptr, int align );
-
 struct TheEntitytainerConfig {
     void* memory;
     int   memory_size;
@@ -171,13 +167,43 @@ typedef struct {
     bool                       keep_capacity_on_remove;
 } TheEntitytainer;
 
+ENTITYTAINER_API int entitytainer_needed_size( struct TheEntitytainerConfig* config );
+ENTITYTAINER_API TheEntitytainer* entitytainer_create( struct TheEntitytainerConfig* config );
+
+ENTITYTAINER_API void entitytainer_add_entity( TheEntitytainer* entitytainer, TheEntitytainerEntity entity );
+ENTITYTAINER_API void entitytainer_remove_entity( TheEntitytainer* entitytainer, TheEntitytainerEntity entity );
+ENTITYTAINER_API void entitytainer_reserve( TheEntitytainer* entitytainer, TheEntitytainerEntity parent, int capacity );
+
+ENTITYTAINER_API void
+                      entitytainer_add_child( TheEntitytainer* entitytainer, TheEntitytainerEntity parent, TheEntitytainerEntity child );
+ENTITYTAINER_API void entitytainer_add_child_at_index( TheEntitytainer*      entitytainer,
+                                                       TheEntitytainerEntity parent,
+                                                       TheEntitytainerEntity child,
+                                                       int                   index );
 ENTITYTAINER_API void entitytainer_remove_child_no_holes( TheEntitytainer*      entitytainer,
                                                           TheEntitytainerEntity parent,
                                                           TheEntitytainerEntity child );
-
 ENTITYTAINER_API void entitytainer_remove_child_with_holes( TheEntitytainer*      entitytainer,
                                                             TheEntitytainerEntity parent,
                                                             TheEntitytainerEntity child );
+
+ENTITYTAINER_API void entitytainer_get_children( TheEntitytainer*        entitytainer,
+                                                 TheEntitytainerEntity   parent,
+                                                 TheEntitytainerEntity** children,
+                                                 int*                    num_children,
+                                                 int*                    capacity );
+ENTITYTAINER_API int  entitytainer_num_children( TheEntitytainer* entitytainer, TheEntitytainerEntity parent );
+ENTITYTAINER_API int  entitytainer_get_child_index( TheEntitytainer*      entitytainer,
+                                                    TheEntitytainerEntity parent,
+                                                    TheEntitytainerEntity child );
+ENTITYTAINER_API TheEntitytainerEntity entitytainer_get_parent( TheEntitytainer*      entitytainer,
+                                                                TheEntitytainerEntity child );
+
+ENTITYTAINER_API bool entitytainer_is_added( TheEntitytainer* entitytainer, TheEntitytainerEntity entity );
+
+#ifdef ENTITYTAINER_IMPLEMENTATION
+
+static void* entitytainer__ptr_to_aligned_ptr( void* ptr, int align );
 
 ENTITYTAINER_API int
 entitytainer_needed_size( struct TheEntitytainerConfig* config ) {
