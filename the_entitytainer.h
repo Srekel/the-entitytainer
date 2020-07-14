@@ -399,9 +399,9 @@ entitytainer_remove_entity( TheEntitytainer* entitytainer, TheEntitytainerEntity
     int                        bucket_index      = lookup & ENTITYTAINER_BucketMask;
     int                        bucket_offset     = bucket_index * bucket_list->bucket_size;
     TheEntitytainerEntity*     bucket            = bucket_list->bucket_data + bucket_offset;
-    *bucket                                      = 0xffff; // TODO remove
-    *bucket                                      = (TheEntitytainerEntity)bucket_list->first_free_bucket;
-    bucket_list->first_free_bucket               = bucket_index;
+    ASSERT( bucket[0] == 0 ); // Entity had children, remove them first.
+    *bucket                        = (TheEntitytainerEntity)bucket_list->first_free_bucket;
+    bucket_list->first_free_bucket = bucket_index;
 
     entitytainer->entry_lookup[entity] = 0;
     --bucket_list->used_buckets;
@@ -516,6 +516,7 @@ entitytainer_add_child( TheEntitytainer* entitytainer, TheEntitytainerEntity par
         bucket[count] = child;
     }
 
+    ASSERT( entitytainer->entry_parent_lookup[child] == ENTITYTAINER_InvalidEntity );
     entitytainer->entry_parent_lookup[child] = parent;
 }
 
@@ -547,6 +548,9 @@ entitytainer_add_child_at_index( TheEntitytainer*      entitytainer,
         ENTITYTAINER_memset( bucket_new, 0, bucket_list_new->bucket_size * sizeof( TheEntitytainerEntity ) );
         ENTITYTAINER_memcpy( bucket_new, bucket, bucket_list->bucket_size * sizeof( TheEntitytainerEntity ) );
 
+        *bucket                        = (TheEntitytainerEntity)bucket_list->first_free_bucket;
+        bucket_list->first_free_bucket = bucket_index;
+
         bucket_list_new->used_buckets++;
         bucket_list->used_buckets--;
 
@@ -567,6 +571,7 @@ entitytainer_add_child_at_index( TheEntitytainer*      entitytainer,
     bucket[0]                   = count;
     bucket[index + 1]           = child;
 
+    ASSERT( entitytainer->entry_parent_lookup[child] == ENTITYTAINER_InvalidEntity );
     entitytainer->entry_parent_lookup[child] = parent;
 }
 

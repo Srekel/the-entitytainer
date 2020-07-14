@@ -88,6 +88,11 @@ do_single_parent_tests( TheEntitytainer* entitytainer ) {
     ASSERT( children[2] == 13 );
     ASSERT( num_children == 3 );
 
+    while ( num_children > 0 ) {
+        entitytainer_remove_entity( entitytainer, children[0] );
+        entitytainer_get_children( entitytainer, 3, &children, &num_children, &capacity );
+    }
+
     entitytainer_remove_entity( entitytainer, 3 );
 }
 
@@ -120,6 +125,15 @@ do_multi_parent_tests( TheEntitytainer* entitytainer ) {
     ASSERT( entitytainer_get_parent( entitytainer, 31 ) == 30 );
     ASSERT( entitytainer_num_children( entitytainer, 30 ) == 4 );
 
+    int                    num_children;
+    int                    capacity;
+    TheEntitytainerEntity* children;
+    entitytainer_get_children( entitytainer, 10, &children, &num_children, &capacity );
+    while ( num_children > 0 ) {
+        entitytainer_remove_entity( entitytainer, children[0] );
+        entitytainer_get_children( entitytainer, 10, &children, &num_children, &capacity );
+    }
+
     entitytainer_remove_entity( entitytainer, 10 );
     entitytainer_add_entity( entitytainer, 10 );
     ASSERT( entitytainer_num_children( entitytainer, 10 ) == 0 );
@@ -138,9 +152,6 @@ do_multi_parent_tests( TheEntitytainer* entitytainer ) {
         entitytainer_remove_entity( entitytainer, 41 + i_child );
     }
 
-    TheEntitytainerEntity* children;
-    int                    num_children;
-    int                    capacity;
     entitytainer_get_children( entitytainer, 40, &children, &num_children, &capacity );
     ASSERT( children[0] == 49 );
     ASSERT( num_children == 7 );
@@ -148,6 +159,18 @@ do_multi_parent_tests( TheEntitytainer* entitytainer ) {
     entitytainer_add_entity( entitytainer, 41 );
     ASSERT( entitytainer_get_parent( entitytainer, 41 ) == 0 );
     ASSERT( entitytainer_num_children( entitytainer, 41 ) == 0 );
+
+    entitytainer_get_children( entitytainer, 20, &children, &num_children, &capacity );
+    while ( num_children > 0 ) {
+        entitytainer_remove_entity( entitytainer, children[0] );
+        entitytainer_get_children( entitytainer, 20, &children, &num_children, &capacity );
+    }
+
+    entitytainer_get_children( entitytainer, 40, &children, &num_children, &capacity );
+    while ( num_children > 0 ) {
+        entitytainer_remove_entity( entitytainer, children[0] );
+        entitytainer_get_children( entitytainer, 40, &children, &num_children, &capacity );
+    }
 
     entitytainer_remove_entity( entitytainer, 10 );
     entitytainer_remove_entity( entitytainer, 20 );
