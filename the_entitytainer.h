@@ -207,6 +207,7 @@ ENTITYTAINER_API TheEntitytainerEntity entitytainer_get_parent( TheEntitytainer*
                                                                 TheEntitytainerEntity child );
 
 ENTITYTAINER_API bool entitytainer_is_added( TheEntitytainer* entitytainer, TheEntitytainerEntity entity );
+ENTITYTAINER_API void entitytainer_remove_holes( TheEntitytainer* entitytainer, TheEntitytainerEntity entity );
 
 ENTITYTAINER_API int entitytainer_save( TheEntitytainer* entitytainer, unsigned char* buffer, int buffer_size );
 ENTITYTAINER_API TheEntitytainer* entitytainer_load( unsigned char* buffer, int buffer_size );
@@ -775,6 +776,31 @@ ENTITYTAINER_API bool
 entitytainer_is_added( TheEntitytainer* entitytainer, TheEntitytainerEntity entity ) {
     TheEntitytainerEntry lookup = entitytainer->entry_lookup[entity];
     return lookup != 0;
+}
+
+ENTITYTAINER_API void
+entitytainer_remove_holes( TheEntitytainer* entitytainer, TheEntitytainerEntity entity ) {
+    TheEntitytainerEntry lookup = entitytainer->entry_lookup[entity];
+    ENTITYTAINER_assert( lookup != 0 );
+    int                        bucket_list_index = lookup >> ENTITYTAINER_BucketListOffset;
+    TheEntitytainerBucketList* bucket_list       = entitytainer->bucket_lists + bucket_list_index;
+    int                        bucket_index      = lookup & ENTITYTAINER_BucketMask;
+    int                        bucket_offset     = bucket_index * bucket_list->bucket_size;
+    TheEntitytainerEntity*     bucket            = (TheEntitytainerEntity*)( bucket_list->bucket_data + bucket_offset );
+    int                        first_free_index  = 1;
+    for ( int i = 1; i < bucket_list->bucket_size; ++i ) {
+        TheEntitytainerEntity child = bucket[i];
+        if ( child != ENTITYTAINER_InvalidEntity ) {
+            for ( int i_free = first_free_index; i_free < i; ++i_free ) {
+                if ( bucket[i_free] == ENTITYTAINER_InvalidEntity ) {
+                    first_free_index = i_free + 1;
+                    bucket[i_free]   = child;
+                    bucket[i]        = ENTITYTAINER_InvalidEntity;
+                    break;
+                }
+            }
+        }
+    }
 }
 
 ENTITYTAINER_API int
