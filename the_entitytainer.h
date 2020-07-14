@@ -81,7 +81,8 @@ extern "C" {
 #ifdef _MSC_VER
 #pragma warning( push, 0 )
 #pragma warning( disable : 4365 )
-#pragma warning( disable : 5045 ) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+#pragma warning( \
+  disable : 5045 ) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
 #endif
 
 #ifdef __clang__
@@ -426,10 +427,12 @@ entitytainer_reserve( TheEntitytainer* entitytainer, TheEntitytainerEntity paren
         return;
     }
 
-    TheEntitytainerBucketList* bucket_list_new = NULL;
+    TheEntitytainerBucketList* bucket_list_new       = NULL;
+    int                        bucket_list_index_new = 0;
     for ( int i_bl = 0; i_bl < entitytainer->num_bucket_lists; ++i_bl ) {
         bucket_list_new = &entitytainer->bucket_lists[i_bl];
-        if ( bucket_list_new->bucket_size > capacity ) {
+        if ( bucket_list_new->bucket_size > capacity + 1 ) {
+            bucket_list_index_new = i_bl;
             break;
         }
     }
@@ -457,10 +460,10 @@ entitytainer_reserve( TheEntitytainer* entitytainer, TheEntitytainerEntity paren
     bucket_list->used_buckets--;
 
     // Update lookup
-    int                  bucket_list_index_new = ( bucket_list_index + 1 ) << ENTITYTAINER_BucketListOffset;
-    TheEntitytainerEntry lookup_new            = (TheEntitytainerEntry)bucket_list_index_new;
-    lookup_new                                 = lookup_new | (TheEntitytainerEntry)bucket_index_new;
-    entitytainer->entry_lookup[parent]         = lookup_new;
+    TheEntitytainerEntry lookup_new =
+      ( TheEntitytainerEntry )( bucket_list_index_new << ENTITYTAINER_BucketListOffset );
+    lookup_new                         = lookup_new | (TheEntitytainerEntry)bucket_index_new;
+    entitytainer->entry_lookup[parent] = lookup_new;
 }
 
 ENTITYTAINER_API void
@@ -560,8 +563,9 @@ entitytainer_add_child_at_index( TheEntitytainer*      entitytainer,
         bucket_list_new->used_buckets++;
         bucket_list->used_buckets--;
 
-        bucket      = bucket_new;
-        bucket_list = bucket_list_new;
+        bucket       = bucket_new;
+        bucket_list  = bucket_list_new;
+        bucket_index = bucket_index_new;
         bucket_list_index += 1;
 
         // Update lookup
@@ -762,7 +766,7 @@ entitytainer_get_child_index( TheEntitytainer*      entitytainer,
 }
 
 ENTITYTAINER_API TheEntitytainerEntity
-                 entitytainer_get_parent( TheEntitytainer* entitytainer, TheEntitytainerEntity child ) {
+entitytainer_get_parent( TheEntitytainer* entitytainer, TheEntitytainerEntity child ) {
     TheEntitytainerEntity parent = entitytainer->entry_parent_lookup[child];
     return parent;
 }
