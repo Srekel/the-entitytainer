@@ -543,9 +543,15 @@ entitytainer_add_child_at_index( TheEntitytainer*      entitytainer,
     int                        bucket_offset     = bucket_index * bucket_list->bucket_size;
     TheEntitytainerEntity*     bucket            = bucket_list->bucket_data + bucket_offset;
     while ( index + 1 >= bucket_list->bucket_size ) {
-        ASSERT( bucket_list_index != 3 );
+        ASSERT( bucket_list_index != 3 ); // No bucket lists with buckets of this size
         TheEntitytainerBucketList* bucket_list_new  = bucket_list + 1;
         int                        bucket_index_new = bucket_list_new->used_buckets;
+        if ( index + 1 >= bucket_list_new->bucket_size ) {
+            bucket_list_index += 1;
+            bucket_list = bucket_list_new;
+            continue;
+        }
+
         if ( bucket_list_new->first_free_bucket != ENTITYTAINER_NoFreeBucket ) {
             // There's a freed bucket available
             bucket_index_new                   = bucket_list_new->first_free_bucket;
@@ -553,6 +559,7 @@ entitytainer_add_child_at_index( TheEntitytainer*      entitytainer,
             bucket_list_new->first_free_bucket = bucket_list_new->bucket_data[bucket_offset_new];
         }
 
+        ASSERT( bucket_index_new < bucket_list_new->total_buckets ); // No free buckets at all
         int                    bucket_offset_new = bucket_index_new * bucket_list_new->bucket_size;
         TheEntitytainerEntity* bucket_new        = bucket_list_new->bucket_data + bucket_offset_new;
         ENTITYTAINER_memset( bucket_new, 0, bucket_list_new->bucket_size * sizeof( TheEntitytainerEntity ) );
