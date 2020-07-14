@@ -81,6 +81,7 @@ extern "C" {
 #ifdef _MSC_VER
 #pragma warning( push, 0 )
 #pragma warning( disable : 4365 )
+#pragma warning( disable : 5045 ) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
 #endif
 
 #ifdef __clang__
@@ -169,6 +170,11 @@ typedef struct {
 
 ENTITYTAINER_API int entitytainer_needed_size( struct TheEntitytainerConfig* config );
 ENTITYTAINER_API TheEntitytainer* entitytainer_create( struct TheEntitytainerConfig* config );
+
+ENTITYTAINER_API TheEntitytainer*
+                 entitytainer_realloc( TheEntitytainer* entitytainer_old, void* memory, int memory_size, float growth );
+ENTITYTAINER_API bool
+entitytainer_needs_realloc( TheEntitytainer* entitytainer, float percent_free, int num_free_buckets );
 
 ENTITYTAINER_API void entitytainer_add_entity( TheEntitytainer* entitytainer, TheEntitytainerEntity entity );
 ENTITYTAINER_API void entitytainer_remove_entity( TheEntitytainer* entitytainer, TheEntitytainerEntity entity );
@@ -810,6 +816,7 @@ ENTITYTAINER_API TheEntitytainer*
         bucket_data += list->bucket_size * list->total_buckets;
     }
 
+    (void)buffer_size;
     ENTITYTAINER_assert( (unsigned char*)bucket_data <= buffer + buffer_size );
     return entitytainer;
 }
@@ -820,8 +827,9 @@ entitytainer__ptr_to_aligned_ptr( void* ptr, int align ) {
         return ptr;
     }
 
-    int   offset      = ( ~(int)ptr + 1 ) & ( align - 1 );
-    void* aligned_ptr = (char*)ptr + offset;
+    long long int ptr_address = (long long int)ptr;
+    int           offset      = ( ~(int)ptr_address + 1 ) & ( align - 1 );
+    void*         aligned_ptr = (char*)ptr + offset;
     return aligned_ptr;
 }
 

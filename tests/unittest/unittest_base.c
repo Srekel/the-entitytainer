@@ -17,6 +17,8 @@
 
 #pragma warning( disable : 4464 ) // Include with ".."
 #include "../../the_entitytainer.h"
+#pragma warning( disable : 5045 ) // warning C5045: Compiler will insert Spectre mitigation for memory load if /Qspectre
+                                  // switch specified
 
 static void
 do_single_parent_tests( TheEntitytainer* entitytainer ) {
