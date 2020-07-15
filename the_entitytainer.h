@@ -1,4 +1,4 @@
-/* clang-format off */
+/* clang-format on */
 
 /*
 the_entitytainer.h - v0.01 - public domain - Anders Elfgren @srekel, 2019
@@ -140,12 +140,14 @@ typedef unsigned short TheEntitytainerEntry;
 #define ENTITYTAINER_API extern
 #endif
 
+#define ENTITYTAINER_MAX_BUCKET_LISTS 8
+
 struct TheEntitytainerConfig {
     void* memory;
     int   memory_size;
     int   num_entries;
-    int*  bucket_sizes;
-    int*  bucket_list_sizes;
+    int   bucket_sizes[ENTITYTAINER_MAX_BUCKET_LISTS];
+    int   bucket_list_sizes[ENTITYTAINER_MAX_BUCKET_LISTS];
     int   num_bucket_lists;
     bool  remove_with_holes;
     bool  keep_capacity_on_remove;
@@ -160,13 +162,14 @@ typedef struct {
 } TheEntitytainerBucketList;
 
 typedef struct {
-    TheEntitytainerEntry*      entry_lookup;
-    TheEntitytainerEntity*     entry_parent_lookup;
-    TheEntitytainerBucketList* bucket_lists;
-    int                        num_bucket_lists;
-    int                        entry_lookup_size;
-    bool                       remove_with_holes;
-    bool                       keep_capacity_on_remove;
+    struct TheEntitytainerConfig config;
+    TheEntitytainerEntry*        entry_lookup;
+    TheEntitytainerEntity*       entry_parent_lookup;
+    TheEntitytainerBucketList*   bucket_lists;
+    int                          num_bucket_lists;
+    int                          entry_lookup_size;
+    bool                         remove_with_holes;
+    bool                         keep_capacity_on_remove;
 } TheEntitytainer;
 
 ENTITYTAINER_API int entitytainer_needed_size( struct TheEntitytainerConfig* config );
@@ -211,6 +214,7 @@ ENTITYTAINER_API void entitytainer_remove_holes( TheEntitytainer* entitytainer, 
 
 ENTITYTAINER_API int entitytainer_save( TheEntitytainer* entitytainer, unsigned char* buffer, int buffer_size );
 ENTITYTAINER_API TheEntitytainer* entitytainer_load( unsigned char* buffer, int buffer_size );
+ENTITYTAINER_API void entitytainer_load_into( TheEntitytainer* entitytainer_src, TheEntitytainer* entitytainer_dst );
 
 #ifdef ENTITYTAINER_IMPLEMENTATION
 
@@ -249,6 +253,8 @@ ENTITYTAINER_API TheEntitytainer*
     entitytainer->remove_with_holes       = config->remove_with_holes;
     entitytainer->keep_capacity_on_remove = config->keep_capacity_on_remove;
     entitytainer->entry_lookup_size       = config->num_entries;
+
+    ENTITYTAINER_memcpy( &entitytainer->config, config, sizeof( *config ) );
 
     buffer += sizeof( TheEntitytainer );
     entitytainer->entry_lookup = (TheEntitytainerEntry*)buffer;
@@ -429,7 +435,7 @@ entitytainer_reserve( TheEntitytainer* entitytainer, TheEntitytainerEntity paren
     }
 
     TheEntitytainerBucketList* bucket_list_new       = NULL;
-    int                        bucket_list_index_new = 0;
+    int                        bucket_list_index_new = -1;
     for ( int i_bl = 0; i_bl < entitytainer->num_bucket_lists; ++i_bl ) {
         bucket_list_new = &entitytainer->bucket_lists[i_bl];
         if ( bucket_list_new->bucket_size > capacity + 1 ) {
@@ -856,6 +862,53 @@ ENTITYTAINER_API TheEntitytainer*
     (void)buffer_size;
     ENTITYTAINER_assert( (unsigned char*)bucket_data <= buffer + buffer_size );
     return entitytainer;
+}
+
+ENTITYTAINER_API void
+entitytainer_load_into( TheEntitytainer* entitytainer_dst, const TheEntitytainer* entitytainer_src ) {
+    // if ( ENTITYTAINER_memcmp( &entitytainer_dst->config, &entitytainer_src->config, sizeof( TheEntitytainerConfig ) )
+    // ==
+    //      0 ) {
+    //     ENTITYTAINER_memcpy( entitytainer_dst, entitytainer_src, sizeof( TheEntitytainerConfig ) );
+    //     return;
+    // }
+
+    // Only allow grow for now
+    ASSERT( entitytainer_src->config.num_bucket_lists == entitytainer_dst->config.num_bucket_lists );
+    for ( int i_bl = 0; i_bl < entitytainer_src->config.num_bucket_lists; ++i_bl ) {
+        ASSERT( entitytainer_src->config.bucket_sizes[i_bl] <= entitytainer_dst->config.bucket_sizes[i_bl] );
+        ASSERT( entitytainer_src->config.bucket_list_sizes[i_bl] <= entitytainer_dst->config.bucket_list_sizes[i_bl] );
+
+        if ( entitytainer_src->config.bucket_sizes[i_bl] == entitytainer_dst->config.bucket_sizes[i_bl] ) {
+            int bucket_list_size = sizeof( TheEntitytainerEntity ) * entitytainer_src->config.bucket_list_sizes[i_bl] *
+                                   entitytainer_src->config.bucket_sizes[i_bl];
+            ENTITYTAINER_memcpy( entitytainer_dst->bucket_lists[i_bl].bucket_data,
+                                 entitytainer_src->bucket_lists[i_bl].bucket_data,
+                                 bucket_list_size );
+        }
+        else {
+            TheEntitytainerBucketList* bucket_list_src = &entitytainer_src->bucket_lists[i_bl];
+            int                        bucket_size_src = entitytainer_src->config.bucket_sizes[i_bl];
+            TheEntitytainerBucketList* bucket_list_dst = &entitytainer_dst->bucket_lists[i_bl];
+            int                        bucket_size_dst = entitytainer_dst->config.bucket_sizes[i_bl];
+            for ( int i_bucket = 0; i_bucket < entitytainer_src->config.bucket_list_sizes[i_bl]; ++i_bucket ) {
+                int                    bucket_offset_src = i_bucket * bucket_size_src;
+                TheEntitytainerEntity* bucket_src        = bucket_list_src->bucket_data + bucket_offset_src;
+                int                    bucket_offset_dst = i_bucket * bucket_size_dst;
+                TheEntitytainerEntity* bucket_dst        = bucket_list_dst->bucket_data + bucket_offset_dst;
+                ENTITYTAINER_memcpy( bucket_dst, bucket_src, bucket_size_src * sizeof( TheEntitytainerEntity ) );
+            }
+        }
+        entitytainer_dst->bucket_lists[i_bl].first_free_bucket = entitytainer_src->bucket_lists[i_bl].first_free_bucket;
+        entitytainer_dst->bucket_lists[i_bl].used_buckets      = entitytainer_src->bucket_lists[i_bl].used_buckets;
+    }
+
+    ENTITYTAINER_memcpy( entitytainer_dst->entry_lookup,
+                         entitytainer_src->entry_lookup,
+                         sizeof( TheEntitytainerEntry ) * entitytainer_src->entry_lookup_size );
+    ENTITYTAINER_memcpy( entitytainer_dst->entry_parent_lookup,
+                         entitytainer_src->entry_parent_lookup,
+                         sizeof( TheEntitytainerEntity ) * entitytainer_src->entry_lookup_size );
 }
 
 static void*

@@ -381,26 +381,113 @@ do_save_load_test( TheEntitytainer* entitytainer ) {
 
     memcpy( buffer, loaded, buffer_size );
     TheEntitytainer* loaded2 = entitytainer_load( buffer, buffer_size );
-    // ASSERT( memcmp( entitytainer, &buffer, buffer_size ) == 0 );
+    ASSERT( memcmp( &loaded2->config, &entitytainer->config, sizeof( loaded2->config ) ) == 0 );
+    // ASSERT( memcmp( entitytainer, &loaded2, buffer_size ) == 0 );
     (void)loaded2;
+}
+
+static void
+do_save_load_upgrade_test( void ) {
+    TheEntitytainer* entitytainer_1;
+    TheEntitytainer* entitytainer_2;
+    TheEntitytainer* entitytainer_3;
+
+    {
+        struct TheEntitytainerConfig config = { 0 };
+        config.num_entries                  = 8;
+        config.bucket_sizes[0]              = 2;
+        config.bucket_sizes[1]              = 8;
+        config.bucket_list_sizes[0]         = 2;
+        config.bucket_list_sizes[1]         = 4;
+        config.num_bucket_lists             = 2;
+        config.remove_with_holes            = false;
+        int needed_memory_size              = entitytainer_needed_size( &config );
+        config.memory                       = malloc( needed_memory_size );
+        config.memory_size                  = needed_memory_size;
+        entitytainer_1                      = entitytainer_create( &config );
+
+        entitytainer_add_entity( entitytainer_1, 1 );
+        entitytainer_reserve( entitytainer_1, 1, 3 );
+        entitytainer_add_entity( entitytainer_1, 3 );
+        entitytainer_add_child( entitytainer_1, 1, 2 );
+        entitytainer_add_child( entitytainer_1, 1, 3 );
+        entitytainer_add_child( entitytainer_1, 3, 4 );
+    }
+
+    {
+        struct TheEntitytainerConfig config = { 0 };
+        config.num_entries                  = 8;
+        config.bucket_sizes[0]              = 2;
+        config.bucket_sizes[1]              = 8;
+        config.bucket_list_sizes[0]         = 2;
+        config.bucket_list_sizes[1]         = 4;
+        config.num_bucket_lists             = 2;
+        config.remove_with_holes            = false;
+        int needed_memory_size              = entitytainer_needed_size( &config );
+        config.memory                       = malloc( needed_memory_size );
+        config.memory_size                  = needed_memory_size;
+        entitytainer_2                      = entitytainer_create( &config );
+    }
+
+    {
+        struct TheEntitytainerConfig config = { 0 };
+        config.num_entries                  = 64;
+        config.bucket_sizes[0]              = 4;
+        config.bucket_sizes[1]              = 16;
+        config.bucket_list_sizes[0]         = 2;
+        config.bucket_list_sizes[1]         = 8;
+        config.num_bucket_lists             = 2;
+        config.remove_with_holes            = false;
+        int needed_memory_size              = entitytainer_needed_size( &config );
+        config.memory                       = malloc( needed_memory_size );
+        config.memory_size                  = needed_memory_size;
+        entitytainer_3                      = entitytainer_create( &config );
+    }
+
+    int            buffer_size = entitytainer_save( entitytainer_1, NULL, 0 );
+    unsigned char* buffer      = malloc( buffer_size );
+    memset( buffer, 0, buffer_size );
+    entitytainer_save( entitytainer_1, buffer, buffer_size );
+
+    TheEntitytainer* entitytainer_1b = entitytainer_load( buffer, buffer_size );
+    entitytainer_load_into( entitytainer_2, entitytainer_1b );
+    entitytainer_load_into( entitytainer_3, entitytainer_1b );
+
+    int                    num_children;
+    int                    capacity;
+    TheEntitytainerEntity* children;
+    entitytainer_get_children( entitytainer_2, 1, &children, &num_children, &capacity );
+    ASSERT( *children == 2 );
+    ASSERT( num_children == 2 );
+    entitytainer_get_children( entitytainer_2, 3, &children, &num_children, &capacity );
+    ASSERT( *children == 4 );
+    ASSERT( num_children == 1 );
+
+    entitytainer_get_children( entitytainer_3, 1, &children, &num_children, &capacity );
+    ASSERT( *children == 2 );
+    ASSERT( num_children == 2 );
+    entitytainer_get_children( entitytainer_3, 3, &children, &num_children, &capacity );
+    ASSERT( *children == 4 );
+    ASSERT( num_children == 1 );
 }
 
 static void
 unittest_run_base( UnitTestData* testdata ) {
     testdata->num_tests = 0;
 
-    int                          max_num_entries     = 64;
-    int                          bucket_sizes[]      = { 4, 8, 16 };
-    int                          bucket_list_sizes[] = { 4, 2, 2 };
-    struct TheEntitytainerConfig config              = { 0 };
-    config.num_entries                               = max_num_entries;
-    config.bucket_sizes                              = bucket_sizes;
-    config.bucket_list_sizes                         = bucket_list_sizes;
-    config.num_bucket_lists                          = 3;
-    config.remove_with_holes                         = false;
-    int needed_memory_size                           = entitytainer_needed_size( &config );
-    config.memory                                    = malloc( needed_memory_size );
-    config.memory_size                               = needed_memory_size;
+    struct TheEntitytainerConfig config = { 0 };
+    config.num_entries                  = 64;
+    config.bucket_sizes[0]              = 4;
+    config.bucket_sizes[1]              = 8;
+    config.bucket_sizes[2]              = 16;
+    config.bucket_list_sizes[0]         = 4;
+    config.bucket_list_sizes[1]         = 2;
+    config.bucket_list_sizes[2]         = 2;
+    config.num_bucket_lists             = 3;
+    config.remove_with_holes            = false;
+    int needed_memory_size              = entitytainer_needed_size( &config );
+    config.memory                       = malloc( needed_memory_size );
+    config.memory_size                  = needed_memory_size;
 
     TheEntitytainer* entitytainer = entitytainer_create( &config );
 
@@ -434,6 +521,8 @@ unittest_run_base( UnitTestData* testdata ) {
     entitytainer                   = entitytainer_create( &config );
     do_multi_entity_tests( entitytainer );
     do_save_load_test( entitytainer );
+
+    do_save_load_upgrade_test();
 
     printf( "Run errors found:   %u/%u\n", testdata->error_index, testdata->num_tests );
 
