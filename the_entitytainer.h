@@ -893,7 +893,7 @@ entitytainer__ptr_to_aligned_ptr( void* ptr, int align ) {
 This software is available under 2 licenses -- choose whichever you prefer.
 ------------------------------------------------------------------------------
 ALTERNATIVE A - MIT License
-Copyright (c) 2017 Anders Elfgren
+Copyright (c) 2020 Anders Elfgren
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
 the Software without restriction, including without limitation the rights to
