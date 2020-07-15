@@ -438,7 +438,7 @@ entitytainer_reserve( TheEntitytainer* entitytainer, TheEntitytainerEntity paren
         }
     }
 
-    ASSERT( bucket_list_new != NULL && bucket_list_new->bucket_size > capacity );
+    ASSERT( bucket_list_index_new != -1 );
 
     int bucket_index_new = bucket_list_new->used_buckets;
     if ( bucket_list_new->first_free_bucket != ENTITYTAINER_NoFreeBucket ) {
