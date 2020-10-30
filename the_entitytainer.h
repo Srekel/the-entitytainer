@@ -49,8 +49,8 @@ I recommend looking at the unittest.c file for an example of how to use it, but 
     int                    num_children;
     TheEntitytainerEntity* children;
     entitytainer_get_children( entitytainer, 3, &children, &num_children );
-    ASSERT( num_children == 1 );
-    ASSERT( children[0] == 10 );
+    ENTITYTAINER_assert( num_children == 1 );
+    ENTITYTAINER_assert( children[0] == 10 );
 ```
 
 ## Notes
@@ -388,7 +388,7 @@ entitytainer_add_entity( TheEntitytainer* entitytainer, TheEntitytainerEntity en
     }
 
     // TODO: Move to larger bucket list if this one is full
-    ASSERT( bucket_list->used_buckets < bucket_list->total_buckets );
+    ENTITYTAINER_assert( bucket_list->used_buckets < bucket_list->total_buckets );
     ++bucket_list->used_buckets;
 
     TheEntitytainerEntry* lookup = &entitytainer->entry_lookup[entity];
@@ -425,7 +425,7 @@ entitytainer_remove_entity( TheEntitytainer* entitytainer, TheEntitytainerEntity
     int                        bucket_index      = lookup & ENTITYTAINER_BucketMask;
     int                        bucket_offset     = bucket_index * bucket_list->bucket_size;
     TheEntitytainerEntity*     bucket            = bucket_list->bucket_data + bucket_offset;
-    ASSERT( bucket[0] == 0 ); // Entity had children, remove them first.
+    ENTITYTAINER_assert( bucket[0] == 0 ); // Entity had children, remove them first.
     *bucket                        = (TheEntitytainerEntity)bucket_list->first_free_bucket;
     bucket_list->first_free_bucket = bucket_index;
 
@@ -456,7 +456,7 @@ entitytainer_reserve( TheEntitytainer* entitytainer, TheEntitytainerEntity paren
         }
     }
 
-    ASSERT( bucket_list_index_new != -1 );
+    ENTITYTAINER_assert( bucket_list_index_new != -1 );
 
     int bucket_index_new = bucket_list_new->used_buckets;
     if ( bucket_list_new->first_free_bucket != ENTITYTAINER_NoFreeBucket ) {
@@ -496,7 +496,7 @@ entitytainer_add_child( TheEntitytainer* entitytainer, TheEntitytainerEntity par
     TheEntitytainerEntity*     bucket            = bucket_list->bucket_data + bucket_offset;
 
 #if ENTITYTAINER_DEFENSIVE_ASSERTS
-    ASSERT( !entitytainer__child_in_bucket( bucket, bucket_list, child ) );
+    ENTITYTAINER_assert( !entitytainer__child_in_bucket( bucket, bucket_list, child ) );
 #endif
 
 #if ENTITYTAINER_DEFENSIVE_CHECKS
@@ -507,7 +507,7 @@ entitytainer_add_child( TheEntitytainer* entitytainer, TheEntitytainerEntity par
 #endif
 
     if ( bucket[0] + 1 == bucket_list->bucket_size ) {
-        ASSERT( bucket_list_index != 3 );
+        ENTITYTAINER_assert( bucket_list_index != 3 );
         TheEntitytainerBucketList* bucket_list_new  = bucket_list + 1;
         int                        bucket_index_new = bucket_list_new->used_buckets;
         if ( bucket_list_new->first_free_bucket != ENTITYTAINER_NoFreeBucket ) {
@@ -537,7 +537,7 @@ entitytainer_add_child( TheEntitytainer* entitytainer, TheEntitytainerEntity par
     }
 
 #if ENTITYTAINER_DEFENSIVE_ASSERTS
-    ASSERT( !entitytainer__child_in_bucket( bucket, bucket_list, child ) );
+    ENTITYTAINER_assert( !entitytainer__child_in_bucket( bucket, bucket_list, child ) );
 #endif
 
     // Update count and insert child into bucket
@@ -560,7 +560,7 @@ entitytainer_add_child( TheEntitytainer* entitytainer, TheEntitytainerEntity par
         bucket[count] = child;
     }
 
-    ASSERT( entitytainer->entry_parent_lookup[child] == ENTITYTAINER_InvalidEntity );
+    ENTITYTAINER_assert( entitytainer->entry_parent_lookup[child] == ENTITYTAINER_InvalidEntity );
     entitytainer->entry_parent_lookup[child] = parent;
 }
 
@@ -578,7 +578,7 @@ entitytainer_add_child_at_index( TheEntitytainer*      entitytainer,
     TheEntitytainerEntity*     bucket            = bucket_list->bucket_data + bucket_offset;
 
 #if ENTITYTAINER_DEFENSIVE_ASSERTS
-    ASSERT( !entitytainer__child_in_bucket( bucket, bucket_list, child ) );
+    ENTITYTAINER_assert( !entitytainer__child_in_bucket( bucket, bucket_list, child ) );
 #endif
 
 #if ENTITYTAINER_DEFENSIVE_CHECKS
@@ -589,7 +589,7 @@ entitytainer_add_child_at_index( TheEntitytainer*      entitytainer,
 #endif
 
     while ( index + 1 >= bucket_list->bucket_size ) {
-        ASSERT( bucket_list_index != 3 ); // No bucket lists with buckets of this size
+        ENTITYTAINER_assert( bucket_list_index != 3 ); // No bucket lists with buckets of this size
         TheEntitytainerBucketList* bucket_list_new  = bucket_list + 1;
         int                        bucket_index_new = bucket_list_new->used_buckets;
         if ( index + 1 >= bucket_list_new->bucket_size ) {
@@ -605,7 +605,7 @@ entitytainer_add_child_at_index( TheEntitytainer*      entitytainer,
             bucket_list_new->first_free_bucket = bucket_list_new->bucket_data[bucket_offset_new];
         }
 
-        ASSERT( bucket_index_new < bucket_list_new->total_buckets ); // No free buckets at all
+        ENTITYTAINER_assert( bucket_index_new < bucket_list_new->total_buckets ); // No free buckets at all
         int                    bucket_offset_new = bucket_index_new * bucket_list_new->bucket_size;
         TheEntitytainerEntity* bucket_new        = bucket_list_new->bucket_data + bucket_offset_new;
         ENTITYTAINER_memset( bucket_new, 0, bucket_list_new->bucket_size * sizeof( TheEntitytainerEntity ) );
@@ -630,16 +630,16 @@ entitytainer_add_child_at_index( TheEntitytainer*      entitytainer,
     }
 
 #if ENTITYTAINER_DEFENSIVE_ASSERTS
-    ASSERT( !entitytainer__child_in_bucket( bucket, bucket_list, child ) );
+    ENTITYTAINER_assert( !entitytainer__child_in_bucket( bucket, bucket_list, child ) );
 #endif
 
     // Update count and insert child into bucket
-    ASSERT( bucket[index + 1] == ENTITYTAINER_InvalidEntity );
+    ENTITYTAINER_assert( bucket[index + 1] == ENTITYTAINER_InvalidEntity );
     TheEntitytainerEntity count = bucket[0] + (TheEntitytainerEntity)1;
     bucket[0]                   = count;
     bucket[index + 1]           = child;
 
-    ASSERT( entitytainer->entry_parent_lookup[child] == ENTITYTAINER_InvalidEntity );
+    ENTITYTAINER_assert( entitytainer->entry_parent_lookup[child] == ENTITYTAINER_InvalidEntity );
     entitytainer->entry_parent_lookup[child] = parent;
 }
 
@@ -664,7 +664,7 @@ entitytainer_remove_child_no_holes( TheEntitytainer*      entitytainer,
         ++child_to_move;
     }
 
-    ASSERT( count < num_children );
+    ENTITYTAINER_assert( count < num_children );
 
     for ( ; count < num_children - 1; ++count ) {
         *child_to_move = *( child_to_move + 1 );
@@ -676,7 +676,7 @@ entitytainer_remove_child_no_holes( TheEntitytainer*      entitytainer,
     entitytainer->entry_parent_lookup[child] = 0;
 
 #if ENTITYTAINER_DEFENSIVE_ASSERTS
-    ASSERT( !entitytainer__child_in_bucket( bucket, bucket_list, child ) );
+    ENTITYTAINER_assert( !entitytainer__child_in_bucket( bucket, bucket_list, child ) );
 #endif
 
 #if ENTITYTAINER_DEFENSIVE_CHECKS
@@ -715,7 +715,7 @@ entitytainer_remove_child_no_holes( TheEntitytainer*      entitytainer,
         entitytainer->entry_lookup[parent]         = lookup_new;
 
 #if ENTITYTAINER_DEFENSIVE_ASSERTS
-        ASSERT( !entitytainer__child_in_bucket( bucket, bucket_list, child ) );
+        ENTITYTAINER_assert( !entitytainer__child_in_bucket( bucket, bucket_list, child ) );
 #endif
 
 #if ENTITYTAINER_DEFENSIVE_CHECKS
@@ -752,7 +752,7 @@ entitytainer_remove_child_with_holes( TheEntitytainer*      entitytainer,
         }
     }
 
-    ASSERT( child_to_move_index != 0 );
+    ENTITYTAINER_assert( child_to_move_index != 0 );
     bucket[child_to_move_index] = ENTITYTAINER_InvalidEntity;
 
     // Lower child count, clear entry
@@ -760,7 +760,7 @@ entitytainer_remove_child_with_holes( TheEntitytainer*      entitytainer,
     entitytainer->entry_parent_lookup[child] = 0;
 
 #if ENTITYTAINER_DEFENSIVE_ASSERTS
-    ASSERT( !entitytainer__child_in_bucket( bucket, bucket_list, child ) );
+    ENTITYTAINER_assert( !entitytainer__child_in_bucket( bucket, bucket_list, child ) );
 #endif
 
 #if ENTITYTAINER_DEFENSIVE_CHECKS
@@ -800,7 +800,7 @@ entitytainer_remove_child_with_holes( TheEntitytainer*      entitytainer,
         entitytainer->entry_lookup[parent]         = lookup_new;
 
 #if ENTITYTAINER_DEFENSIVE_ASSERTS
-        ASSERT( !entitytainer__child_in_bucket( bucket, bucket_list, child ) );
+        ENTITYTAINER_assert( !entitytainer__child_in_bucket( bucket, bucket_list, child ) );
 #endif
 
 #if ENTITYTAINER_DEFENSIVE_CHECKS
@@ -878,7 +878,7 @@ entitytainer_is_added( TheEntitytainer* entitytainer, TheEntitytainerEntity enti
 ENTITYTAINER_API void
 entitytainer_remove_holes( TheEntitytainer* entitytainer, TheEntitytainerEntity entity ) {
     // TODO
-    ASSERT( false );
+    ENTITYTAINER_assert( false );
     TheEntitytainerEntry lookup = entitytainer->entry_lookup[entity];
     ENTITYTAINER_assert( lookup != 0 );
     int                        bucket_list_index = lookup >> ENTITYTAINER_BucketListOffset;
@@ -961,10 +961,12 @@ entitytainer_load_into( TheEntitytainer* entitytainer_dst, const TheEntitytainer
     // }
 
     // Only allow grow for now
-    ASSERT( entitytainer_src->config.num_bucket_lists == entitytainer_dst->config.num_bucket_lists );
+    ENTITYTAINER_assert( entitytainer_src->config.num_bucket_lists == entitytainer_dst->config.num_bucket_lists );
     for ( int i_bl = 0; i_bl < entitytainer_src->config.num_bucket_lists; ++i_bl ) {
-        ASSERT( entitytainer_src->config.bucket_sizes[i_bl] <= entitytainer_dst->config.bucket_sizes[i_bl] );
-        ASSERT( entitytainer_src->config.bucket_list_sizes[i_bl] <= entitytainer_dst->config.bucket_list_sizes[i_bl] );
+        ENTITYTAINER_assert( entitytainer_src->config.bucket_sizes[i_bl] <=
+                             entitytainer_dst->config.bucket_sizes[i_bl] );
+        ENTITYTAINER_assert( entitytainer_src->config.bucket_list_sizes[i_bl] <=
+                             entitytainer_dst->config.bucket_list_sizes[i_bl] );
 
         if ( entitytainer_src->config.bucket_sizes[i_bl] == entitytainer_dst->config.bucket_sizes[i_bl] ) {
             int bucket_list_size = sizeof( TheEntitytainerEntity ) * entitytainer_src->config.bucket_list_sizes[i_bl] *
