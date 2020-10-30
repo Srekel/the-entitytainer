@@ -95,8 +95,8 @@ extern "C" {
 #endif // ENTITYTAINER_ENABLE_WARNINGS
 
 #ifndef ENTITYTAINER_assert
-#include <assert.h>
-#define ENTITYTAINER_assert assert;
+// #include <assert.h>
+#define ENTITYTAINER_assert
 #endif
 
 #ifndef ENTITYTAINER_memcpy
@@ -122,6 +122,7 @@ extern "C" {
 #ifndef ENTITYTAINER_Entity
 typedef unsigned short TheEntitytainerEntity;
 #define ENTITYTAINER_InvalidEntity ( (TheEntitytainerEntity)0u )
+#define ENTITYTAINER_EntityFormat "%hu"
 #endif
 
 #ifndef ENTITYTAINER_Entry
@@ -382,7 +383,10 @@ entitytainer_needs_realloc( TheEntitytainer* entitytainer, float percent_free, i
 
 ENTITYTAINER_API void
 entitytainer_add_entity( TheEntitytainer* entitytainer, TheEntitytainerEntity entity ) {
-    ENTITYTAINER_assert( entitytainer->entry_lookup[entity] == 0 );
+    ENTITYTAINER_assert( entitytainer->entry_lookup[entity] == 0,
+                         "Entitytainer[%s] Tried to add entity " ENTITYTAINER_EntityFormat " but it was already added.",
+                         entitytainer->config.name,
+                         entity );
 
     TheEntitytainerBucketList* bucket_list  = &entitytainer->bucket_lists[0];
     int                        bucket_index = bucket_list->used_buckets;
@@ -771,7 +775,7 @@ entitytainer_remove_child_with_holes( TheEntitytainer*      entitytainer,
 
 #if ENTITYTAINER_DEFENSIVE_CHECKS
     if ( entitytainer__child_in_bucket( bucket, bucket_list, child ) ) {
-        entitytainer_remove_child_no_holes( entitytainer, parent, child );
+        entitytainer_remove_child_with_holes( entitytainer, parent, child );
     }
 #endif
 
@@ -811,7 +815,7 @@ entitytainer_remove_child_with_holes( TheEntitytainer*      entitytainer,
 
 #if ENTITYTAINER_DEFENSIVE_CHECKS
         if ( entitytainer__child_in_bucket( bucket, bucket_list, child ) ) {
-            entitytainer_remove_child_no_holes( entitytainer, parent, child );
+            entitytainer_remove_child_with_holes( entitytainer, parent, child );
         }
 #endif
     }
@@ -1004,6 +1008,48 @@ entitytainer_load_into( TheEntitytainer* entitytainer_dst, const TheEntitytainer
     ENTITYTAINER_memcpy( entitytainer_dst->entry_parent_lookup,
                          entitytainer_src->entry_parent_lookup,
                          sizeof( TheEntitytainerEntity ) * entitytainer_src->entry_lookup_size );
+
+#if ENTITYTAINER_DEFENSIVE_CHECKS
+    for ( TheEntitytainerEntity entity = 0; entity < entitytainer_dst->config.num_entries; ++entity ) {
+        TheEntitytainerEntry lookup = entitytainer_dst->entry_lookup[entity];
+        if ( lookup == 0 ) {
+            continue;
+        }
+
+        int                        bucket_list_index = lookup >> ENTITYTAINER_BucketListOffset;
+        TheEntitytainerBucketList* bucket_list       = entitytainer_dst->bucket_lists + bucket_list_index;
+        int                        bucket_index      = lookup & ENTITYTAINER_BucketMask;
+        int                        bucket_offset     = bucket_index * bucket_list->bucket_size;
+        TheEntitytainerEntity*     bucket            = bucket_list->bucket_data + bucket_offset;
+
+        TheEntitytainerEntity count       = bucket[0];
+        TheEntitytainerEntity found_count = 0;
+        for ( int i_child1 = 1; i_child1 < bucket_list->bucket_size; ++i_child1 ) {
+            if ( found_count == count ) {
+                break;
+            }
+
+            if ( bucket[i_child1] == ENTITYTAINER_InvalidEntity ) {
+                continue;
+            }
+
+            ++found_count;
+            for ( int i_child2 = i_child1 + 1; i_child2 < bucket_list->bucket_size; ++i_child2 ) {
+                if ( bucket[i_child1] == bucket[i_child2] ) {
+                    if ( entitytainer_dst->remove_with_holes ) {
+                        ENTITYTAINER_assert(entitytainer_dst->keep_capacity_on_remove, "untested");
+                        bucket[0]--;
+                        bucket[i_child2] = 0;
+                        // entitytainer_remove_child_with_holes( entitytainer_dst, entity, bucket[i_child1] );
+                    }
+                    else {
+                        ENTITYTAINER_assert( false, "untested" );
+                    }
+                }
+            }
+        }
+    }
+#endif
 }
 
 static void*
@@ -1023,10 +1069,10 @@ entitytainer__child_in_bucket( TheEntitytainerEntity*     bucket,
                                TheEntitytainerBucketList* bucket_list,
                                TheEntitytainerEntity      child ) {
 
-    TheEntitytainerEntity count = bucket[0];
-    int                   found = 0;
+    TheEntitytainerEntity count       = bucket[0];
+    TheEntitytainerEntity found_count = 0;
     for ( int i = 1; i < bucket_list->bucket_size; ++i ) {
-        if ( found == count ) {
+        if ( found_count == count ) {
             break;
         }
 
@@ -1038,7 +1084,7 @@ entitytainer__child_in_bucket( TheEntitytainerEntity*     bucket,
             return true;
         }
 
-        ++found;
+        ++found_count;
     }
 
     return false;

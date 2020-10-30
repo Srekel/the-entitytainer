@@ -11,11 +11,13 @@
 
 #include "unittest.h"
 
-#define ENTITYTAINER_assert unittest_entitytainer_assert
+// #define ENTITYTAINER_assert unittest_entitytainer_assert
 #define ASSERT unittest_entitytainer_assert
 #define ENTITYTAINER_IMPLEMENTATION
 #define ENTITYTAINER_DEFENSIVE_ASSERTS 0
 #define ENTITYTAINER_DEFENSIVE_CHECKS 1
+
+#define ENTITYTAINER_assert( condition, ... ) unittest_entitytainer_assert( condition )
 
 #pragma warning( disable : 4464 ) // Include with ".."
 #include "../../the_entitytainer.h"
@@ -243,6 +245,23 @@ do_single_parent_hole_tests( TheEntitytainer* entitytainer ) {
     entitytainer_get_children( entitytainer, 10, &children, &num_children, &capacity );
     ASSERT( num_children == 2 );
     ASSERT( capacity == 3 );
+
+    entitytainer_remove_child_with_holes( entitytainer, 10, 20 );
+    entitytainer_remove_child_with_holes( entitytainer, 10, 21 );
+    entitytainer_get_children(entitytainer, 10, &children, &num_children, &capacity);
+    ASSERT( num_children == 0 );
+    ASSERT( capacity == 3 );
+
+    entitytainer_add_child( entitytainer, 10, 20 );
+    entitytainer_add_child( entitytainer, 10, 21 );
+    entitytainer_add_child( entitytainer, 10, 22 );
+    entitytainer_add_child( entitytainer, 10, 23 );
+    entitytainer_get_children( entitytainer, 10, &children, &num_children, &capacity );
+    ASSERT( num_children == 4 );
+    ASSERT( capacity == 7 );
+    entitytainer_remove_child_with_holes( entitytainer, 10, 21 );
+    entitytainer_remove_child_with_holes( entitytainer, 10, 22 );
+    entitytainer_remove_child_with_holes( entitytainer, 10, 23 );
 }
 
 static void
