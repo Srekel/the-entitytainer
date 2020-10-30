@@ -14,6 +14,8 @@
 #define ENTITYTAINER_assert unittest_entitytainer_assert
 #define ASSERT unittest_entitytainer_assert
 #define ENTITYTAINER_IMPLEMENTATION
+#define ENTITYTAINER_DEFENSIVE_ASSERTS 0
+#define ENTITYTAINER_DEFENSIVE_CHECKS 1
 
 #pragma warning( disable : 4464 ) // Include with ".."
 #include "../../the_entitytainer.h"
@@ -33,6 +35,7 @@ do_single_parent_tests( TheEntitytainer* entitytainer ) {
     ASSERT( *children == 0 );
     ASSERT( num_children == 0 );
 
+    entitytainer_add_child( entitytainer, 3, 4 );
     entitytainer_add_child( entitytainer, 3, 4 );
     ASSERT( entitytainer_get_parent( entitytainer, 4 ) == 3 );
     ASSERT( entitytainer_num_children( entitytainer, 3 ) == 1 );

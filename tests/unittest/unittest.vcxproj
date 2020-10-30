@@ -22,7 +22,7 @@
     <ProjectGuid>{97FE62A5-44C3-4741-882F-FC515FDC8A86}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>thedebuginator</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
