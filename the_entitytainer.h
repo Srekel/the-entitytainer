@@ -159,6 +159,7 @@ struct TheEntitytainerConfig {
     int   num_bucket_lists;
     bool  remove_with_holes;
     bool  keep_capacity_on_remove;
+    char  name[256];
 };
 
 typedef struct {
@@ -267,6 +268,11 @@ ENTITYTAINER_API TheEntitytainer*
     entitytainer->entry_lookup_size       = config->num_entries;
 
     ENTITYTAINER_memcpy( &entitytainer->config, config, sizeof( *config ) );
+    if ( entitytainer->config.name[0] == 0 ) {
+        const char* default_name = "entitytainer";
+        ENTITYTAINER_memcpy( entitytainer->config.name, default_name, 12 );
+        entitytainer->config.name[12] = 0;
+    }
 
     buffer += sizeof( TheEntitytainer );
     entitytainer->entry_lookup = (TheEntitytainerEntry*)buffer;
