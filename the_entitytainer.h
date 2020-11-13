@@ -290,7 +290,8 @@ ENTITYTAINER_API TheEntitytainer*
     TheEntitytainerEntity* bucket_data       = bucket_data_start;
     for ( int i = 0; i < config->num_bucket_lists; ++i ) {
         // Just making sure that we don't go into the bucket data area
-        ENTITYTAINER_assert( buffer + sizeof( TheEntitytainerBucketList ) <= bucket_list_end );
+        ENTITYTAINER_assert( buffer + sizeof( TheEntitytainerBucketList ) <= bucket_list_end,
+                             "Passing end of bucket area" );
 
         // We need to do this because first_free_bucket is stored as an int.
         ENTITYTAINER_assert( config->bucket_sizes[i] * sizeof( TheEntitytainerEntity ) >= sizeof( int ) );
@@ -435,7 +436,12 @@ entitytainer_remove_entity( TheEntitytainer* entitytainer, TheEntitytainerEntity
     int                        bucket_index      = lookup & ENTITYTAINER_BucketMask;
     int                        bucket_offset     = bucket_index * bucket_list->bucket_size;
     TheEntitytainerEntity*     bucket            = bucket_list->bucket_data + bucket_offset;
-    ENTITYTAINER_assert( bucket[0] == 0 ); // Entity had children, remove them first.
+    ENTITYTAINER_assert( bucket[0] == 0,
+                         "Entitytainer[%s] Tried to remove " ENTITYTAINER_EntityFormat
+                         " but it still had children. First child=" ENTITYTAINER_EntityFormat,
+                         "",
+                         entity,
+                         bucket[1] );
     *bucket                        = (TheEntitytainerEntity)bucket_list->first_free_bucket;
     bucket_list->first_free_bucket = bucket_index;
 
@@ -498,7 +504,12 @@ entitytainer_reserve( TheEntitytainer* entitytainer, TheEntitytainerEntity paren
 ENTITYTAINER_API void
 entitytainer_add_child( TheEntitytainer* entitytainer, TheEntitytainerEntity parent, TheEntitytainerEntity child ) {
     TheEntitytainerEntry lookup = entitytainer->entry_lookup[parent];
-    ENTITYTAINER_assert( lookup != 0 );
+    ENTITYTAINER_assert( lookup != 0,
+                         "Entitytainer[%s] Tried to add " ENTITYTAINER_EntityFormat
+                         " as child to " ENTITYTAINER_EntityFormat " who was not added.",
+                         "",
+                         child,
+                         parent );
     int                        bucket_list_index = lookup >> ENTITYTAINER_BucketListOffset;
     TheEntitytainerBucketList* bucket_list       = entitytainer->bucket_lists + bucket_list_index;
     int                        bucket_index      = lookup & ENTITYTAINER_BucketMask;
@@ -506,7 +517,12 @@ entitytainer_add_child( TheEntitytainer* entitytainer, TheEntitytainerEntity par
     TheEntitytainerEntity*     bucket            = bucket_list->bucket_data + bucket_offset;
 
 #if ENTITYTAINER_DEFENSIVE_ASSERTS
-    ENTITYTAINER_assert( !entitytainer__child_in_bucket( bucket, bucket_list, child ) );
+    ENTITYTAINER_assert( !entitytainer__child_in_bucket( bucket, bucket_list, child ),
+                         "Entitytainer[%s] Tried to add " ENTITYTAINER_EntityFormat
+                         " as child to " ENTITYTAINER_EntityFormat " but it was already its child.",
+                         "",
+                         child,
+                         parent );
 #endif
 
 #if ENTITYTAINER_DEFENSIVE_CHECKS
@@ -571,6 +587,14 @@ entitytainer_add_child( TheEntitytainer* entitytainer, TheEntitytainerEntity par
     }
 
     ENTITYTAINER_assert( entitytainer->entry_parent_lookup[child] == ENTITYTAINER_InvalidEntity );
+    ENTITYTAINER_assert( entitytainer->entry_parent_lookup[child] == ENTITYTAINER_InvalidEntity,
+                         "Entitytainer[%s] Tried to add " ENTITYTAINER_EntityFormat
+                         " as child to " ENTITYTAINER_EntityFormat
+                         " but it was already parented to " ENTITYTAINER_EntityFormat,
+                         "",
+                         child,
+                         parent,
+                         entitytainer->entry_parent_lookup[child] );
     entitytainer->entry_parent_lookup[child] = parent;
 }
 
@@ -649,7 +673,14 @@ entitytainer_add_child_at_index( TheEntitytainer*      entitytainer,
     bucket[0]                   = count;
     bucket[index + 1]           = child;
 
-    ENTITYTAINER_assert( entitytainer->entry_parent_lookup[child] == ENTITYTAINER_InvalidEntity );
+    ENTITYTAINER_assert( entitytainer->entry_parent_lookup[child] == ENTITYTAINER_InvalidEntity,
+                         "Entitytainer[%s] Tried to add " ENTITYTAINER_EntityFormat
+                         " as child to " ENTITYTAINER_EntityFormat
+                         " but it was already parented to " ENTITYTAINER_EntityFormat,
+                         "",
+                         child,
+                         parent,
+                         entitytainer->entry_parent_lookup[child] );
     entitytainer->entry_parent_lookup[child] = parent;
 }
 
@@ -657,7 +688,7 @@ ENTITYTAINER_API void
 entitytainer_remove_child_no_holes( TheEntitytainer*      entitytainer,
                                     TheEntitytainerEntity parent,
                                     TheEntitytainerEntity child ) {
-    ASSERT(!entitytainer->config.remove_with_holes);
+    ASSERT( !entitytainer->config.remove_with_holes );
     TheEntitytainerEntry lookup = entitytainer->entry_lookup[parent];
     ENTITYTAINER_assert( lookup != 0 );
     int                        bucket_list_index = lookup >> ENTITYTAINER_BucketListOffset;
@@ -771,7 +802,12 @@ entitytainer_remove_child_with_holes( TheEntitytainer*      entitytainer,
     entitytainer->entry_parent_lookup[child] = 0;
 
 #if ENTITYTAINER_DEFENSIVE_ASSERTS
-    ENTITYTAINER_assert( !entitytainer__child_in_bucket( bucket, bucket_list, child ), "Entitytainer[%s] Removed child " ENTITYTAINER_EntityFormat " from parent " ENTITYTAINER_EntityFormat ", but it was still its child.", "", child, parent );
+    ENTITYTAINER_assert( !entitytainer__child_in_bucket( bucket, bucket_list, child ),
+                         "Entitytainer[%s] Removed child " ENTITYTAINER_EntityFormat
+                         " from parent " ENTITYTAINER_EntityFormat ", but it was still its child.",
+                         "",
+                         child,
+                         parent );
 #endif
 
 #if ENTITYTAINER_DEFENSIVE_CHECKS
@@ -1038,7 +1074,7 @@ entitytainer_load_into( TheEntitytainer* entitytainer_dst, const TheEntitytainer
             for ( int i_child2 = i_child1 + 1; i_child2 < bucket_list->bucket_size; ++i_child2 ) {
                 if ( bucket[i_child1] == bucket[i_child2] ) {
                     if ( entitytainer_dst->remove_with_holes ) {
-                        ENTITYTAINER_assert(entitytainer_dst->keep_capacity_on_remove, "untested");
+                        ENTITYTAINER_assert( entitytainer_dst->keep_capacity_on_remove, "untested" );
                         bucket[0]--;
                         bucket[i_child2] = 0;
                         // entitytainer_remove_child_with_holes( entitytainer_dst, entity, bucket[i_child1] );
@@ -1071,9 +1107,9 @@ entitytainer__child_in_bucket( TheEntitytainerEntity*     bucket,
                                TheEntitytainerEntity      child ) {
 
     TheEntitytainerEntity count = bucket[0];
-    TheEntitytainerEntity found_count = 0;
+    int                   found = 0;
     for ( int i = 1; i < bucket_list->bucket_size; ++i ) {
-        if ( found_count == count ) {
+        if ( found == count ) {
             break;
         }
 
@@ -1085,7 +1121,7 @@ entitytainer__child_in_bucket( TheEntitytainerEntity*     bucket,
             return true;
         }
 
-        ++found_count;
+        ++found;
     }
 
     return false;
