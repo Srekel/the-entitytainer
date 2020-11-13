@@ -540,6 +540,7 @@ unittest_run_base( UnitTestData* testdata ) {
 
     memset( config.memory, 0, config.memory_size );
     config.keep_capacity_on_remove = false;
+    config.remove_with_holes       = false;
     entitytainer                   = entitytainer_create( &config );
     do_multi_entity_tests( entitytainer );
     do_save_load_test( entitytainer );

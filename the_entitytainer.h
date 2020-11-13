@@ -49,8 +49,8 @@ I recommend looking at the unittest.c file for an example of how to use it, but 
     int                    num_children;
     TheEntitytainerEntity* children;
     entitytainer_get_children( entitytainer, 3, &children, &num_children );
-    ENTITYTAINER_assert( num_children == 1 );
-    ENTITYTAINER_assert( children[0] == 10 );
+    ASSERT( num_children == 1 );
+    ASSERT( children[0] == 10 );
 ```
 
 ## Notes
@@ -148,7 +148,7 @@ typedef unsigned short TheEntitytainerEntry;
 #endif
 
 #ifndef ENTITYTAINER_DEFENSIVE_ASSERTS
-#define ENTITYTAINER_DEFENSIVE_ASSERTS 1
+#define ENTITYTAINER_DEFENSIVE_ASSERTS 0
 #endif
 
 struct TheEntitytainerConfig {
@@ -160,7 +160,7 @@ struct TheEntitytainerConfig {
     int   num_bucket_lists;
     bool  remove_with_holes;
     bool  keep_capacity_on_remove;
-    char  name[256];
+    // char  name[256];
 };
 
 typedef struct {
@@ -269,11 +269,11 @@ ENTITYTAINER_API TheEntitytainer*
     entitytainer->entry_lookup_size       = config->num_entries;
 
     ENTITYTAINER_memcpy( &entitytainer->config, config, sizeof( *config ) );
-    if ( entitytainer->config.name[0] == 0 ) {
-        const char* default_name = "entitytainer";
-        ENTITYTAINER_memcpy( entitytainer->config.name, default_name, 12 );
-        entitytainer->config.name[12] = 0;
-    }
+    // if ( entitytainer->config.name[0] == 0 ) {
+    //     const char* default_name = "entitytainer";
+    //     ENTITYTAINER_memcpy( entitytainer->config.name, default_name, 12 );
+    //     entitytainer->config.name[12] = 0;
+    // }
 
     buffer += sizeof( TheEntitytainer );
     entitytainer->entry_lookup = (TheEntitytainerEntry*)buffer;
@@ -385,7 +385,7 @@ ENTITYTAINER_API void
 entitytainer_add_entity( TheEntitytainer* entitytainer, TheEntitytainerEntity entity ) {
     ENTITYTAINER_assert( entitytainer->entry_lookup[entity] == 0,
                          "Entitytainer[%s] Tried to add entity " ENTITYTAINER_EntityFormat " but it was already added.",
-                         entitytainer->config.name,
+                         "",
                          entity );
 
     TheEntitytainerBucketList* bucket_list  = &entitytainer->bucket_lists[0];
@@ -657,6 +657,7 @@ ENTITYTAINER_API void
 entitytainer_remove_child_no_holes( TheEntitytainer*      entitytainer,
                                     TheEntitytainerEntity parent,
                                     TheEntitytainerEntity child ) {
+    ASSERT(!entitytainer->config.remove_with_holes);
     TheEntitytainerEntry lookup = entitytainer->entry_lookup[parent];
     ENTITYTAINER_assert( lookup != 0 );
     int                        bucket_list_index = lookup >> ENTITYTAINER_BucketListOffset;
@@ -770,7 +771,7 @@ entitytainer_remove_child_with_holes( TheEntitytainer*      entitytainer,
     entitytainer->entry_parent_lookup[child] = 0;
 
 #if ENTITYTAINER_DEFENSIVE_ASSERTS
-    ENTITYTAINER_assert( !entitytainer__child_in_bucket( bucket, bucket_list, child ) );
+    ENTITYTAINER_assert( !entitytainer__child_in_bucket( bucket, bucket_list, child ), "Entitytainer[%s] Removed child " ENTITYTAINER_EntityFormat " from parent " ENTITYTAINER_EntityFormat ", but it was still its child.", "", child, parent );
 #endif
 
 #if ENTITYTAINER_DEFENSIVE_CHECKS
@@ -1069,7 +1070,7 @@ entitytainer__child_in_bucket( TheEntitytainerEntity*     bucket,
                                TheEntitytainerBucketList* bucket_list,
                                TheEntitytainerEntity      child ) {
 
-    TheEntitytainerEntity count       = bucket[0];
+    TheEntitytainerEntity count = bucket[0];
     TheEntitytainerEntity found_count = 0;
     for ( int i = 1; i < bucket_list->bucket_size; ++i ) {
         if ( found_count == count ) {
